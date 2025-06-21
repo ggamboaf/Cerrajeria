@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+    <subject>Reinicio de contraseña</subject>
+    <body>
+        <![CDATA[
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Reinicio de contraseña</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #f4f4f4;
+                    padding: 20px;
+                }
+                .contenedor {
+                    background-color: #ffffff;
+                    padding: 30px;
+                    border-radius: 8px;
+                    max-width: 500px;
+                    margin: auto;
+                    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                }
+                .codigo {
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #2c3e50;
+                    background-color: #ecf0f1;
+                    padding: 10px;
+                    text-align: center;
+                    border-radius: 5px;
+                    margin: 20px 0;
+                }
+                .footer {
+                    font-size: 12px;
+                    color: #888;
+                    text-align: center;
+                    margin-top: 20px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="contenedor">
+                <h2>Hola {{ nombre }},</h2>
+                <p>Recibimos una solicitud para reiniciar tu contraseña en <strong>{{ sistema }}</strong>.</p>
+                <p>Utiliza el siguiente código para completar el proceso:</p>
+                <div class="codigo">{{ codigo }}</div>
+                <p>Este código expirará en 10 minutos. Si no solicitaste este cambio, puedes ignorar este mensaje.</p>
+                <div class="footer">
+                    &copy; {{ anio }} {{ sistema }}. Todos los derechos reservados.
+                </div>
+            </div>
+        </body>
+        </html>
+        ]]>
+    </body>
+</template>
