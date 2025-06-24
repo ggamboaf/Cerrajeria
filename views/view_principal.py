@@ -16,7 +16,6 @@ class ViewPrincipal:
         self.root.title("Ventana Principal")
         self.root.bg = "#dee2e6"
         self.model = None
-        self.data = None
 
         self.frame_contenido = None
 
@@ -42,25 +41,24 @@ class ViewPrincipal:
         self.crear_area_contenido()
 
 
-    def mostrar_vista_tree(self,model=None,data=None):
+    def mostrar_vista_tree(self,model=None):
         self.limpiar_crear_contenido()
         self.model = model
-        self.data = data
-        navegacion = [(model,data['tipo'])]
-        vista = ViewTree(self.frame_contenido,model=model, on_select=self.mostrar_vista_form,on_click=self.crear_vista_form,data=data,navegacion=navegacion)
+        navegacion = [model.descripcion]
+        vista = ViewTree(self.frame_contenido,model=model, on_select=self.mostrar_vista_form,on_click=self.crear_vista_form,navegacion=navegacion)
         vista.pack(fill=tk.BOTH, expand=True)
 
-    def mostrar_vista_form(self, valores,model=None,data=None,navegacion=None):
+    def mostrar_vista_form(self, valores,model=None,navegacion=None):
         self.limpiar_crear_contenido()
         self.model = model
-        navegacion.append((self.model,"Nuevo"))
-        vista = ViewForm(self.frame_contenido,id=valores[0],model= self.model,ir_action_back=self.mostrar_vista_tree,data=self.data,navegacion=navegacion)
+        navegacion.append("Nuevo")
+        vista = ViewForm(self.frame_contenido,id=valores[0],model= self.model,ir_action_back=self.mostrar_vista_tree,navegacion=navegacion)
         vista.pack(fill=tk.BOTH, expand=True)
 
     def crear_vista_form(self,navegacion):
         self.limpiar_crear_contenido()
-        navegacion.append((self.model,"Nuevo"))
-        vista = ViewForm(self.frame_contenido,model= self.model,ir_action_back=self.mostrar_vista_tree,data=self.data,navegacion=navegacion)
+        navegacion.append("Nuevo")
+        vista = ViewForm(self.frame_contenido,model= self.model,ir_action_back=self.mostrar_vista_tree,navegacion=navegacion)
         vista.pack(fill=tk.BOTH, expand=True)
 
 
@@ -103,10 +101,10 @@ class ViewPrincipal:
             menu_Contabilidad.add_command(label="Pagos", command=self.dummy_action)
             menu_Contabilidad.add_separator()
         if self.permisos.get("menu_contabilidad_clientes_productos", False) or self.permisos.get("admin", False):
-            menu_Contabilidad.add_command(label="Productos", command=self.dummy_action)
+            menu_Contabilidad.add_command(label="Productos", command=lambda: self.mostrar_vista_tree(Producto))
             menu_Contabilidad.add_separator()
         if self.permisos.get("menu_contabilidad_clientes_clientes", False) or self.permisos.get("admin", False):
-            menu_Contabilidad.add_command(label="Clientes", command=lambda: self.mostrar_vista_tree(ClienteProveedor,data={'tipo': 'Cliente'}))
+            menu_Contabilidad.add_command(label="Clientes", command=lambda: self.mostrar_vista_tree(Cliente))
         self.menu_Contabilidad.add_cascade(label="Clientes", menu=menu_Contabilidad)
 
         menu_Contabilidad = tk.Menu(self.menu_Contabilidad, tearoff=0)
@@ -120,16 +118,16 @@ class ViewPrincipal:
             menu_Contabilidad.add_command(label="Productos", command=self.dummy_action)
             menu_Contabilidad.add_separator()
         if self.permisos.get("menu_contabilidad_proveedores_proveedores", False) or self.permisos.get("admin", False):
-            menu_Contabilidad.add_command(label="Proveedores", command=self.dummy_action)
+            menu_Contabilidad.add_command(label="Proveedores", command=lambda: self.mostrar_vista_tree(Proveedor))
 
         self.menu_Contabilidad.add_cascade(label="Proveedores", menu=menu_Contabilidad)
 
         menu_Contabilidad = tk.Menu(self.menu_Contabilidad, tearoff=0)
         if self.permisos.get("menu_contabilidad_configuracion_impuesto_venta", False) or self.permisos.get("admin", False):
-            menu_Contabilidad.add_command(label="Impuestos de venta", command=lambda: self.mostrar_vista_tree(Impuesto,data={'tipo': 'Venta'}))
+            menu_Contabilidad.add_command(label="Impuestos de venta", command=lambda: self.mostrar_vista_tree(ImpuestoVenta))
             menu_Contabilidad.add_separator()
         if self.permisos.get("menu_contabilidad_configuracion_impuesto_compra", False) or self.permisos.get("admin", False):
-            menu_Contabilidad.add_command(label="Impuestos de compra",command=lambda: self.mostrar_vista_tree(Impuesto,data={'tipo': 'Compra'}))
+            menu_Contabilidad.add_command(label="Impuestos de compra",command=lambda: self.mostrar_vista_tree(ImpuestoCompra))
 
         self.menu_Contabilidad.add_cascade(label="Configuraciones", menu=menu_Contabilidad)
 

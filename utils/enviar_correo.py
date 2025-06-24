@@ -9,7 +9,7 @@ class EnviarCorreo:
         self.ParametroAjuste = ParametroAjuste()
 
     def renderizar_plantilla_xml(self,nombre_plantilla,contexto):
-        tree = ET.parse(f"plantillas/{nombre_plantilla}")
+        tree = ET.parse(f"plantillas/correo/{nombre_plantilla}")
         root = tree.getroot()
 
         subject_template = Template(root.find("subject").text)

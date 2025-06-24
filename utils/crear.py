@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 
 class Crear:
-    def crear_btn(self,text,ajsutes):
+    def crear_btn(self,text,ajsutes,contenedor=None):
         style = ttk.Style()
         style.theme_use('clam')
         style.configure(
@@ -22,6 +22,7 @@ class Crear:
             highlightbackground=[("focus", ajsutes.color_btn_1)]
         )
         return ttk.Button(
+            contenedor,
             text=text,
             style="Custom.TButton"
         )

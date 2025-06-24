@@ -1,0 +1,58 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Factura</title>
+    <style>
+        body { font-family: Arial, sans-serif; color: #333; }
+        .container { width: 80%; margin: auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .logo { width: 150px; height: 150px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; }
+        .detalles, .totales table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .detalles th, .detalles td, .totales th, .totales td { border: 1px solid #333; padding: 8px; }
+        .detalles th, .totales th { background: #f0f0f0; }
+        .nota { margin-top: 20px; font-size: 12px; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">{{ logo }}</div>
+            <div>
+                <strong>{{ emisor.nombre }}</strong><br>
+                {{ emisor.direccion }}<br>
+                Tel: {{ emisor.telefono }}<br>
+                Email: {{ emisor.email }}
+            </div>
+        </div>
+        <div>
+            <strong>Factura para:</strong><br>
+            {{ receptor.nombre }}<br>
+            {{ receptor.direccion }}<br>
+            Tel: {{ receptor.telefono }}<br>
+            Email: {{ receptor.email }}
+        </div>
+        <div>
+            <strong>Factura N°:</strong> {{ factura.numero }}<br>
+            <strong>Fecha de Emisión:</strong> {{ factura.fecha_emision }}<br>
+            <strong>Fecha de Vencimiento:</strong> {{ factura.fecha_vencimiento }}
+        </div>
+        <table class="detalles">
+            <thead>
+                <tr><th>Producto</th><th>Cantidad</th><th>Precio Unitario</th><th>Subtotal</th></tr>
+            </thead>
+            <tbody>
+                {% for p in productos %}
+                <tr><td>{{ p.nombre }}</td><td>{{ p.cantidad }}</td><td>{{ p.precio_unitario }}</td><td>{{ p.subtotal }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="totales">
+            <table>
+                <tr><th>Impuestos</th><td>{{ impuestos }}</td></tr>
+                <tr><th>Total</th><td>{{ total }}</td></tr>
+            </table>
+        </div>
+        <div class="nota">Gracias por su compra.</div>
+    </div>
+</body>
+</html>

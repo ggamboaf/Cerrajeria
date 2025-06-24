@@ -6,9 +6,10 @@ from utils.utils import encriptar_password, verificar_password
 db = SqliteDatabase('cerrajeria.db')
 
 class Char(CharField):
-    def __init__(self, *args, mostrar_Tree=True,mostrar_Form=True, **kwargs):
+    def __init__(self, *args, mostrar_Tree=True,mostrar_Form=True,nombre_default="", **kwargs):
         self.mostrar_Tree = mostrar_Tree
         self.mostrar_Form = mostrar_Form
+        self.nombre_default = nombre_default
         super().__init__(*args, **kwargs)
 
 class Auto(AutoField):
@@ -29,6 +30,13 @@ class Float(FloatField):
         self.mostrar_Form = mostrar_Form
         super().__init__(*args, **kwargs)
 
+class ForeignKey(ForeignKeyField):
+    def __init__(self, *args, mostrar_Tree=True,mostrar_Form=True,campo_busqueda="", **kwargs):
+        self.mostrar_Tree = mostrar_Tree
+        self.mostrar_Form = mostrar_Form
+        self.campo_busqueda = campo_busqueda
+        super().__init__(*args, **kwargs)
+
 class BaseModel(Model):
     class Meta:
         database = db
@@ -42,167 +50,13 @@ class User(BaseModel):
     codigo = Char(mostrar_Tree=False,mostrar_Form=False,null=True)
     permisos =  Text(default='{}',mostrar_Tree=False,mostrar_Form=True)
 
-class ClienteProveedor(BaseModel):
+class Cliente(BaseModel):
+    plantilla_Name = "Plantilla Clientes.xlsx"
     descripcion = "Cliente"
-    tipo_choices = (
-        ('Cliente', 'Cliente'),
-        ('Proveedor', 'Proveedor'),
-    )
     id = Auto(mostrar_Tree=False,mostrar_Form=False,help_text="ID")
-    tipo = Char(choices=tipo_choices,help_text="Tipo",mostrar_Tree=False,mostrar_Form=False)
     nombre = Char(help_text="Nombre",mostrar_Tree=True,mostrar_Form=True)
     cedula = Char(help_text="Identificación",mostrar_Tree=True,mostrar_Form=True)
     email = Char(help_text="Correo",mostrar_Tree=True,mostrar_Form=True)
-    telfono = Char(help_text="Teléfono",mostrar_Tree=True,mostrar_Form=True)
-
-    @classmethod
-    def crear_actualizar_desde_dict(cls, datos):
-        """
-        Crea o actualiza un registro a partir de un diccionario.
-        Convierte automáticamente los valores a sus tipos correctos.
-        """
-        campos = cls._meta.fields
-
-        def convertir_valor(campo, valor):
-            tipo = type(campos[campo])
-            if tipo == IntegerField:
-                return int(valor)
-            elif tipo == FloatField:
-                return float(valor)
-            elif tipo == BooleanField:
-                return valor.lower() in ("1", "true", "yes", "on")
-            else:
-                return valor  # CharField, TextField, etc.
-
-        datos_convertidos = {}
-        for campo, valor in datos.items():
-            if campo in campos and valor != "":
-                try:
-                    datos_convertidos[campo] = convertir_valor(campo, valor)
-                except Exception as e:
-                    raise ValueError(f"Error al convertir el campo '{campo}': {e}")
-
-        if 'id' in datos_convertidos:
-            try:
-                instancia = cls.get_by_id(datos_convertidos['id'])
-                for campo, valor in datos_convertidos.items():
-                    if campo != 'id':
-                        setattr(instancia, campo, valor)
-                instancia.save()
-                return instancia
-            except cls.DoesNotExist:
-                datos_convertidos.pop('id')
-                return cls.create(**datos_convertidos)
-        else:
-            return cls.create(**datos_convertidos)
-
-    @classmethod
-    def obtener_columnas_para_treeview(cls):
-        """
-        Devuelve una lista de tuplas con los datos de todos los usuarios,
-        lista para insertar en un ttk.Treeview.
-        """
-        datos = []
-        for ClienteProveedor in cls._meta.sorted_fields:
-            datos.append(ClienteProveedor.name)
-        return tuple(datos)
-
-    @classmethod
-    def obtener_datos_para_treeview(cls,tipo):
-        """
-        Devuelve una lista de tuplas con los datos de todos los usuarios,
-        lista para insertar en un ttk.Treeview.
-        """
-        registros = cls.select().where(cls.tipo == tipo)
-        datos = []
-        for ClienteProveedor in registros:
-            datos.append((ClienteProveedor.id, ClienteProveedor.tipo, ClienteProveedor.nombre,ClienteProveedor.cedula,ClienteProveedor.email,ClienteProveedor.telfono))
-        return datos
-
-class Impuesto(BaseModel):
-    tipo_choices = (
-        ('Venta', 'Venta'),
-        ('Compra', 'Compra'),
-    )
-    id = Auto(mostrar_Tree=False,mostrar_Form=False,help_text="ID")
-    nombre = Char(help_text="Nombre",mostrar_Tree=True,mostrar_Form=True)
-    tipo = Char(choices=tipo_choices,help_text="Tipo",mostrar_Tree=False,mostrar_Form=False)
-    importe = Float(help_text="Importe",mostrar_Tree=True,mostrar_Form=True)
-
-    @classmethod
-    def crear_actualizar_desde_dict(cls, datos):
-        """
-        Crea o actualiza un registro a partir de un diccionario.
-        Convierte automáticamente los valores a sus tipos correctos.
-        """
-        campos = cls._meta.fields
-
-        def convertir_valor(campo, valor):
-            tipo = type(campos[campo])
-            if tipo == IntegerField:
-                return int(valor)
-            elif tipo == FloatField:
-                return float(valor)
-            elif tipo == BooleanField:
-                return valor.lower() in ("1", "true", "yes", "on")
-            else:
-                return valor  # CharField, TextField, etc.
-
-        datos_convertidos = {}
-        for campo, valor in datos.items():
-            if campo in campos and valor != "":
-                try:
-                    datos_convertidos[campo] = convertir_valor(campo, valor)
-                except Exception as e:
-                    raise ValueError(f"Error al convertir el campo '{campo}': {e}")
-
-        if 'id' in datos_convertidos:
-            try:
-                instancia = cls.get_by_id(datos_convertidos['id'])
-                for campo, valor in datos_convertidos.items():
-                    if campo != 'id':
-                        setattr(instancia, campo, valor)
-                instancia.save()
-                return instancia
-            except cls.DoesNotExist:
-                datos_convertidos.pop('id')
-                return cls.create(**datos_convertidos)
-        else:
-            return cls.create(**datos_convertidos)
-
-    @classmethod
-    def obtener_columnas_para_treeview(cls):
-        """
-        Devuelve una lista de tuplas con los datos de todos los usuarios,
-        lista para insertar en un ttk.Treeview.
-        """
-        datos = []
-        for registro in cls._meta.sorted_fields:
-            datos.append(registro.name)
-        return tuple(datos)
-
-    @classmethod
-    def obtener_datos_para_treeview(cls,tipo):
-        """
-        Devuelve una lista de tuplas con los datos de todos los usuarios,
-        lista para insertar en un ttk.Treeview.
-        """
-        registros = cls.select().where(cls.tipo == tipo)
-        datos = []
-        for registro in registros:
-            datos.append((registro.id, registro.nombre, registro.tipo,registro.importe))
-        return datos
-
-class Producto(BaseModel):
-    tipo_choices = (
-        ('Consumible', 'Cliente'),
-        ('Servicio', 'Proveedor'),
-    )
-    id = Auto(mostrar_Tree=False,mostrar_Form=False,help_text="ID")
-    nombre = Char(help_text="Nombre",mostrar_Tree=True,mostrar_Form=True)
-    tipo = Char(choices=tipo_choices,help_text="Tipo",mostrar_Tree=True,mostrar_Form=True)
-    precio_Venta = Float(help_text="Precio de venta",mostrar_Tree=True,mostrar_Form=True)
-    precio_Compra = Float(help_text="Precio de compra",mostrar_Tree=True,mostrar_Form=True)
     telfono = Char(help_text="Teléfono",mostrar_Tree=True,mostrar_Form=True)
 
     @classmethod
@@ -263,10 +117,364 @@ class Producto(BaseModel):
         Devuelve una lista de tuplas con los datos de todos los usuarios,
         lista para insertar en un ttk.Treeview.
         """
-        registros = cls.select().where(cls.tipo == "Cliente")
+        registros = cls.select()
         datos = []
-        for ClienteProveedor in registros:
-            datos.append((ClienteProveedor.id, ClienteProveedor.tipo, ClienteProveedor.nombre,ClienteProveedor.cedula,ClienteProveedor.email,ClienteProveedor.telfono))
+        for registro in registros:
+            datos.append((registro.id,registro.nombre,registro.cedula,registro.email,registro.telfono))
+        return datos
+
+class Proveedor(BaseModel):
+    plantilla_Name = "Plantilla Proveedores.xlsx"
+    descripcion = "Proveedor"
+    id = Auto(mostrar_Tree=False,mostrar_Form=False,help_text="ID")
+    nombre = Char(help_text="Nombre",mostrar_Tree=True,mostrar_Form=True)
+    cedula = Char(help_text="Identificación",mostrar_Tree=True,mostrar_Form=True)
+    email = Char(help_text="Correo",mostrar_Tree=True,mostrar_Form=True)
+    telfono = Char(help_text="Teléfono",mostrar_Tree=True,mostrar_Form=True)
+
+    @classmethod
+    def crear_actualizar_desde_dict(cls, datos):
+        """
+        Crea o actualiza un registro a partir de un diccionario.
+        Convierte automáticamente los valores a sus tipos correctos.
+        """
+        campos = cls._meta.fields
+
+        def convertir_valor(campo, valor):
+            tipo = type(campos[campo])
+            if tipo == IntegerField:
+                return int(valor)
+            elif tipo == FloatField:
+                return float(valor)
+            elif tipo == BooleanField:
+                return valor.lower() in ("1", "true", "yes", "on")
+            else:
+                return valor  # CharField, TextField, etc.
+
+        datos_convertidos = {}
+        for campo, valor in datos.items():
+            if campo in campos and valor != "":
+                try:
+                    datos_convertidos[campo] = convertir_valor(campo, valor)
+                except Exception as e:
+                    raise ValueError(f"Error al convertir el campo '{campo}': {e}")
+
+        if 'id' in datos_convertidos:
+            try:
+                instancia = cls.get_by_id(datos_convertidos['id'])
+                for campo, valor in datos_convertidos.items():
+                    if campo != 'id':
+                        setattr(instancia, campo, valor)
+                instancia.save()
+                return instancia
+            except cls.DoesNotExist:
+                datos_convertidos.pop('id')
+                return cls.create(**datos_convertidos)
+        else:
+            return cls.create(**datos_convertidos)
+
+    @classmethod
+    def obtener_columnas_para_treeview(cls):
+        """
+        Devuelve una lista de tuplas con los datos de todos los usuarios,
+        lista para insertar en un ttk.Treeview.
+        """
+        datos = []
+        for registro in cls._meta.sorted_fields:
+            datos.append(registro.name)
+        return tuple(datos)
+
+    @classmethod
+    def obtener_datos_para_treeview(cls):
+        """
+        Devuelve una lista de tuplas con los datos de todos los usuarios,
+        lista para insertar en un ttk.Treeview.
+        """
+        registros = cls.select()
+        datos = []
+        for registro in registros:
+            datos.append((registro.id, registro.nombre,registro.cedula,registro.email,registro.telfono))
+        return datos
+
+class ImpuestoVenta(BaseModel):
+    descripcion = "Impuesto de venta"
+    id = Auto(mostrar_Tree=False,mostrar_Form=False,help_text="ID")
+    nombre = Char(help_text="Nombre",mostrar_Tree=True,mostrar_Form=True,nombre_default="Impuesto")
+    importe = Float(help_text="Importe (%)",mostrar_Tree=True,mostrar_Form=True)
+
+    @classmethod
+    def crear_actualizar_desde_dict(cls, datos):
+        """
+        Crea o actualiza un registro a partir de un diccionario.
+        Convierte automáticamente los valores a sus tipos correctos.
+        """
+        campos = cls._meta.fields
+
+        def convertir_valor(campo, valor):
+            tipo = type(campos[campo])
+            if tipo == IntegerField:
+                return int(valor)
+            elif tipo == FloatField:
+                return float(valor)
+            elif tipo == BooleanField:
+                return valor.lower() in ("1", "true", "yes", "on")
+            else:
+                return valor  # CharField, TextField, etc.
+
+        datos_convertidos = {}
+        for campo, valor in datos.items():
+            if campo in campos and valor != "":
+                try:
+                    datos_convertidos[campo] = convertir_valor(campo, valor)
+                except Exception as e:
+                    raise ValueError(f"Error al convertir el campo '{campo}': {e}")
+
+        if 'id' in datos_convertidos:
+            try:
+                instancia = cls.get_by_id(datos_convertidos['id'])
+                for campo, valor in datos_convertidos.items():
+                    if campo != 'id':
+                        setattr(instancia, campo, valor)
+                instancia.save()
+                return instancia
+            except cls.DoesNotExist:
+                datos_convertidos.pop('id')
+                return cls.create(**datos_convertidos)
+        else:
+            return cls.create(**datos_convertidos)
+
+    @classmethod
+    def obtener_columnas_para_treeview(cls):
+        """
+        Devuelve una lista de tuplas con los datos de todos los usuarios,
+        lista para insertar en un ttk.Treeview.
+        """
+        datos = []
+        for registro in cls._meta.sorted_fields:
+            datos.append(registro.name)
+        return tuple(datos)
+
+    @classmethod
+    def obtener_datos_para_treeview(cls):
+        """
+        Devuelve una lista de tuplas con los datos de todos los usuarios,
+        lista para insertar en un ttk.Treeview.
+        """
+        registros = cls.select()
+        datos = []
+        for registro in registros:
+            datos.append((registro.id, registro.nombre,registro.importe))
+        return datos
+
+    @classmethod
+    def obtener_datos_para_atucompleteview(cls):
+        """
+        Devuelve una lista de tuplas con los datos de todos los usuarios,
+        lista para insertar en un ttk.Treeview.
+        """
+        registros = cls.select()
+        datos = []
+        for model in registros:
+            datos.append((model.id,model.nombre))
+        return datos
+
+class ImpuestoCompra(BaseModel):
+    descripcion = "Impuesto de compra"
+    id = Auto(mostrar_Tree=False,mostrar_Form=False,help_text="ID")
+    nombre = Char(help_text="Nombre",mostrar_Tree=True,mostrar_Form=True,nombre_default="Impuesto")
+    importe = Float(help_text="Importe (%)",mostrar_Tree=True,mostrar_Form=True)
+
+    @classmethod
+    def crear_actualizar_desde_dict(cls, datos):
+        """
+        Crea o actualiza un registro a partir de un diccionario.
+        Convierte automáticamente los valores a sus tipos correctos.
+        """
+        campos = cls._meta.fields
+
+        def convertir_valor(campo, valor):
+            tipo = type(campos[campo])
+            if tipo == IntegerField:
+                return int(valor)
+            elif tipo == FloatField:
+                return float(valor)
+            elif tipo == BooleanField:
+                return valor.lower() in ("1", "true", "yes", "on")
+            else:
+                return valor  # CharField, TextField, etc.
+
+        datos_convertidos = {}
+        for campo, valor in datos.items():
+            if campo in campos and valor != "":
+                try:
+                    datos_convertidos[campo] = convertir_valor(campo, valor)
+                except Exception as e:
+                    raise ValueError(f"Error al convertir el campo '{campo}': {e}")
+
+        if 'id' in datos_convertidos:
+            try:
+                instancia = cls.get_by_id(datos_convertidos['id'])
+                for campo, valor in datos_convertidos.items():
+                    if campo != 'id':
+                        setattr(instancia, campo, valor)
+                instancia.save()
+                return instancia
+            except cls.DoesNotExist:
+                datos_convertidos.pop('id')
+                return cls.create(**datos_convertidos)
+        else:
+            return cls.create(**datos_convertidos)
+
+    @classmethod
+    def obtener_columnas_para_treeview(cls):
+        """
+        Devuelve una lista de tuplas con los datos de todos los usuarios,
+        lista para insertar en un ttk.Treeview.
+        """
+        datos = []
+        for registro in cls._meta.sorted_fields:
+            datos.append(registro.name)
+        return tuple(datos)
+
+    @classmethod
+    def obtener_datos_para_treeview(cls):
+        """
+        Devuelve una lista de tuplas con los datos de todos los usuarios,
+        lista para insertar en un ttk.Treeview.
+        """
+        registros = cls.select()
+        datos = []
+        for registro in registros:
+            datos.append((registro.id, registro.nombre,registro.importe))
+        return datos
+
+    @classmethod
+    def obtener_datos_para_atucompleteview(cls):
+        """
+        Devuelve una lista de tuplas con los datos de todos los usuarios,
+        lista para insertar en un ttk.Treeview.
+        """
+        registros = cls.select()
+        datos = []
+        for model in registros:
+            datos.append((model.id,model.nombre))
+        return datos
+
+class Producto(BaseModel):
+    plantilla_Name = "Plantilla Productos.xlsx"
+    descripcion = "Producto"
+    tipo_choices = (
+        ('Producto', 'Producto'),
+        ('Servicio', 'Servicio'),
+    )
+    id = Auto(mostrar_Tree=False,mostrar_Form=False,help_text="ID")
+    nombre = Char(help_text="Nombre",mostrar_Tree=True,mostrar_Form=True)
+    tipo = Char(choices=tipo_choices,help_text="Tipo",mostrar_Tree=True,mostrar_Form=True)
+    costo = Float(help_text="Costo", mostrar_Tree=True, mostrar_Form=True)
+    porcentaje_ganancia = Float(help_text="Porcentaje de Ganancia (%)",mostrar_Tree=True,mostrar_Form=True)
+    precio_Venta = Float(help_text="Precio de venta",mostrar_Tree=True,mostrar_Form=True)
+    precio_Compra = Float(help_text="Precio de compra",mostrar_Tree=True,mostrar_Form=True)
+    impuesto_Venta = ForeignKey(ImpuestoVenta,backref='Venta',help_text="Impuesto de venta",mostrar_Tree=True,mostrar_Form=True,campo_busqueda="importe")
+    impuesto_Compra = ForeignKey(ImpuestoCompra,backref='Compra',help_text="Impuesto de compra",mostrar_Tree=True,mostrar_Form=True,campo_busqueda="importe")
+
+
+    @classmethod
+    def crear_actualizar_desde_dict(cls, datos):
+        """
+        Crea o actualiza un registro a partir de un diccionario.
+        Convierte automáticamente los valores a sus tipos correctos.
+        """
+        campos = cls._meta.fields
+
+        def convertir_valor(campo, valor):
+            tipo = type(campos[campo])
+            if tipo == IntegerField:
+                return int(valor)
+            elif tipo == FloatField:
+                return float(valor)
+            elif tipo == BooleanField:
+                return valor.lower() in ("1", "true", "yes", "on")
+            else:
+                return valor  # CharField, TextField, etc.
+
+        datos_convertidos = {}
+        for campo, valor in datos.items():
+            if campo in campos and valor != "":
+                try:
+                    datos_convertidos[campo] = convertir_valor(campo, valor)
+                except Exception as e:
+                    raise ValueError(f"Error al convertir el campo '{campo}': {e}")
+
+        if 'id' in datos_convertidos:
+            try:
+                instancia = cls.get_by_id(datos_convertidos['id'])
+                for campo, valor in datos_convertidos.items():
+                    if campo != 'id':
+                        setattr(instancia, campo, valor)
+                instancia.save()
+                return instancia
+            except cls.DoesNotExist:
+                datos_convertidos.pop('id')
+                return cls.create(**datos_convertidos)
+        else:
+            return cls.create(**datos_convertidos)
+
+    @classmethod
+    def obtener_columnas_para_treeview(cls):
+        """
+        Devuelve una lista de tuplas con los datos de todos los usuarios,
+        lista para insertar en un ttk.Treeview.
+        """
+        datos = []
+        for model in cls._meta.sorted_fields:
+            datos.append(model.name)
+        return tuple(datos)
+
+    @classmethod
+    def obtener_datos_para_treeview(cls):
+        """
+        Devuelve una lista de tuplas con los datos de todos los usuarios,
+        lista para insertar en un ttk.Treeview.
+        """
+        registros = cls.select()
+        datos = []
+        for model in registros:
+            datos.append(
+                (
+                    model.id,
+                    model.nombre,
+                    model.tipo,
+                    model.costo,
+                    model.porcentaje_ganancia,
+                    model.precio_Venta,
+                    model.precio_Compra,
+                    model.impuesto_Venta.nombre,
+                    model.impuesto_Compra.nombre,
+                )
+            )
+        return datos
+
+    @classmethod
+    def obtener_datos_para_atucompleteview(cls):
+        """
+        Devuelve una lista de tuplas con los datos de todos los usuarios,
+        lista para insertar en un ttk.Treeview.
+        """
+        registros = cls.select()
+        datos = []
+        for model in registros:
+            datos.append(
+                (
+                    model.id,
+                    model.nombre,
+                    model.tipo,
+                    model.costo,
+                    model.precio_Venta,
+                    model.precio_Compra,
+                    model.impuesto_Venta,
+                    model.impuesto_Compra,
+                )
+            )
         return datos
 
 
@@ -277,7 +485,16 @@ class Ajuste(BaseModel):
 
 
 db.connect()
-db.create_tables([User,ClienteProveedor,Impuesto,Ajuste])
+db.create_tables(
+    [
+        User,
+        Cliente,
+        Proveedor,
+        Producto,
+        ImpuestoVenta,
+        ImpuestoCompra,
+        Ajuste,
+    ])
 
 default_user = {
     "email": "admin",
