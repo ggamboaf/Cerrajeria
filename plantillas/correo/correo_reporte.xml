@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+    <subject>Reinicio de contraseña</subject>
+    <body>
+        <![CDATA[
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 0;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .email-header {
+      background-color: #004aad;
+      color: #ffffff;
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .email-header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .email-body {
+      padding: 30px 20px;
+      color: #333333;
+    }
+    .email-body p {
+      font-size: 16px;
+      line-height: 1.6;
+      margin: 15px 0;
+    }
+    .highlight-box {
+      background-color: #f7f9fc;
+      border-left: 4px solid #004aad;
+      padding: 15px 20px;
+      margin: 20px 0;
+      border-radius: 6px;
+    }
+    .email-footer {
+      text-align: center;
+      font-size: 13px;
+      color: #888888;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="email-header">
+      <h1>{{ factura.nombre }}</h1>
+    </div>
+    <div class="email-body">
+      <p>Estimado/a <strong>{{ cliente.nombre }}</strong>,</p>
+      <p>Le enviamos adjunta la factura correspondiente a los servicios/productos brindados.</p>
+
+      <div class="highlight-box">
+        <p><strong>Factura No.:</strong> {{ factura.nombre }}<br>
+        <strong>Fecha de Emisión:</strong> {{ factura.fecha }}<br>
+        <strong>Monto Total:</strong> {{ factura.total }}</p>
+      </div>
+
+      <p>Por favor, revise el documento adjunto. Si tiene alguna consulta, no dude en contactarnos.</p>
+      <p>Gracias por su confianza.</p>
+      <p>Atentamente,<br>
+      <strong>{{ informacionEmpresa.nombre }}</strong></p>
+    </div>
+    <div class="email-footer">
+      Este mensaje fue generado automáticamente. Por favor, no responda a este correo.
+    </div>
+  </div>
+</body>
+</html>
+        ]]>
+    </body>
+</template>

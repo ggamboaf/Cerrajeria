@@ -3,34 +3,67 @@ import smtplib
 from email.message import EmailMessage
 from jinja2 import Template
 from utils.ajuste import ParametroAjuste
+from utils.generar_reporte import GenerarReporte
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
+from email import encoders
 
 class EnviarCorreo:
     def __init__(self):
         self.ParametroAjuste = ParametroAjuste()
 
-    def renderizar_plantilla_xml(self,nombre_plantilla,contexto):
-        tree = ET.parse(f"plantillas/correo/{nombre_plantilla}")
+    def renderizar_plantilla_xml(self,model):
+        contexto = model.get_contexto()
+        contexto = self.ParametroAjuste.get_contexto_empresa(contexto)
+        tree = ET.parse(f"plantillas/correo/{model.accion_Config['correo_Template']}")
         root = tree.getroot()
 
-        subject_template = Template(root.find("subject").text)
         body_template = Template(root.find("body").text.strip())
 
-        asunto = subject_template.render(contexto)
         cuerpo_html = body_template.render(contexto)
 
-        return asunto, cuerpo_html
+        return cuerpo_html
 
-    def enviar_correo(self,destinatario, nombre_plantilla, contexto):
-        asunto, cuerpo_html = self.renderizar_plantilla_xml(nombre_plantilla,contexto)
+    # def enviar_correo(self,destinatario, nombre_plantilla, contexto):
+    #     asunto, cuerpo_html = self.renderizar_plantilla_xml(nombre_plantilla,contexto)
+    #
+    #     msg = EmailMessage()
+    #     msg.set_content(cuerpo_html, subtype='html')
+    #     msg["Subject"] = asunto
+    #     msg["From"] = self.ParametroAjuste.smtp_usuario
+    #     msg["To"] = destinatario
+    #
+    #     with smtplib.SMTP_SSL( self.ParametroAjuste.smtp_servidor, int(self.ParametroAjuste.smtp_puerto)) as smtp:
+    #         smtp.login(self.ParametroAjuste.smtp_usuario, self.ParametroAjuste.smtp_contrasena)
+    #         smtp.send_message(msg)
+    #
+    #     return True
 
-        msg = EmailMessage()
-        msg.set_content(cuerpo_html, subtype='html')
-        msg["Subject"] = asunto
+    def enviar_correo_reporte(self,model):
+        cuerpo_html = self.renderizar_plantilla_xml(model)
+        pdf = GenerarReporte.obtener_plantilla_pdf(GenerarReporte(),model)
+
+        msg = MIMEMultipart()
+        msg["Subject"] = model.nombre
         msg["From"] = self.ParametroAjuste.smtp_usuario
-        msg["To"] = destinatario
+        msg["To"] = model.cliente.email
+        msg.attach(MIMEText(cuerpo_html, 'html'))
 
-        with smtplib.SMTP_SSL( self.ParametroAjuste.smtp_servidor, int(self.ParametroAjuste.smtp_puerto)) as smtp:
-            smtp.login(self.ParametroAjuste.smtp_usuario, self.ParametroAjuste.smtp_contrasena)
-            smtp.send_message(msg)
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload(pdf)
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition', f"attachment; filename={model.nombre}.pdf")
+        msg.attach(part)
 
-        return True
+        server = smtplib.SMTP_SSL(self.ParametroAjuste.smtp_servidor, int(self.ParametroAjuste.smtp_puerto))
+        server.login(self.ParametroAjuste.smtp_usuario, self.ParametroAjuste.smtp_contrasena)
+        server.send_message(msg)
+        server.quit()
+
+
+        # with smtplib.SMTP_SSL( self.ParametroAjuste.smtp_servidor, int(self.ParametroAjuste.smtp_puerto)) as smtp:
+        #     smtp.login(self.ParametroAjuste.smtp_usuario, self.ParametroAjuste.smtp_contrasena)
+        #     smtp.send_message(msg)
+        #
+        # return True

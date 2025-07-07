@@ -14,6 +14,10 @@ class ParametroAjuste:
             "smtp_puerto": Ajuste.get(Ajuste.key == "smtp.puerto").valor,
             "smtp_usuario": Ajuste.get(Ajuste.key == "smtp.usuario").valor,
             "smtp_contrasena": Ajuste.get(Ajuste.key == "smtp.contrasena").valor,
+            "empresa_nombre": Ajuste.get(Ajuste.key == "empresa.nombre").valor,
+            "empresa_telefono": Ajuste.get(Ajuste.key == "empresa.telefono").valor,
+            "empresa_correo": Ajuste.get(Ajuste.key == "empresa.correo").valor,
+            "empresa_direccion": Ajuste.get(Ajuste.key == "empresa.direccion").valor,
         }
 
         # Asignar los valores iniciales sin disparar __setattr__
@@ -30,3 +34,13 @@ class ParametroAjuste:
         ajsute = Ajuste.get(Ajuste.key == nombre.replace("_","."))
         ajsute.valor = valor
         ajsute.save()
+
+    def get_contexto_empresa(self,contexto):
+        contexto['logo'] = self._valores["empresa_nombre"]
+        contexto['informacionEmpresa'] = {
+            'nombre': self._valores["empresa_nombre"],
+            'email': self._valores["empresa_correo"],
+            'telfono': self._valores["empresa_telefono"],
+            'direccion': self._valores["empresa_direccion"],
+        }
+        return contexto

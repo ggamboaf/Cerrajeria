@@ -20,9 +20,8 @@ env = Environment(loader=FileSystemLoader('.'))
 template = env.get_template('plantillas/reporte/factura_template.html')
 
 def generar_pdf(contexto):
-    path_wkhtmltopdf = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
+    path_wkhtmltopdf = 'assets/wkhtmltox/bin/wkhtmltopdf.exe'
     config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
-    pdfkit.from_url('http://google.com', 'out.pdf', configuration=config)
     html = template.render(contexto)
     pdf_bytes = pdfkit.from_string(html, False,configuration=config)
     return pdf_bytes

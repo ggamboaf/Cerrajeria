@@ -20,10 +20,11 @@ class ViewAjuste(tk.Frame):
         self.marco_logo = None
         self.marco_botones = None
         self.marco_general = None
+        self.marco_empresa = None
         self.Guardado = False
         self.pack(fill=tk.BOTH, expand=True)
         self.frame_contenido_header = self.crear_area_contenido_header()
-        self.frame_contenido = self.crear_area_contenido()
+        self.canvas, self.frame_contenido = self.crear_area_contenido()
         self.crear_header()
         self.crear_form()
 
@@ -33,9 +34,24 @@ class ViewAjuste(tk.Frame):
         return frame_contenido_header
 
     def crear_area_contenido(self):
-        frame_contenido = tk.Frame(self, bg=self.ParametroAjuste.color_frame)
-        frame_contenido.place(relx=0.15, rely=0.15, relwidth=0.7, relheight=0.7)
-        return frame_contenido
+        canvas = tk.Canvas(self,bg=self.ParametroAjuste.color_frame)
+        canvas.place(relx=0.15, rely=0.15, relwidth=0.7, relheight=0.7)
+
+        scrollbar_y = tk.Scrollbar(self, orient=tk.VERTICAL, command=canvas.yview)
+        scrollbar_y.place(relx=0.85, rely=0.15, relheight=0.7)
+
+        canvas.configure(yscrollcommand=scrollbar_y.set)
+
+        frame_contenido = tk.Frame(canvas, bg=self.ParametroAjuste.color_frame)
+        canvas_window = canvas.create_window((0, 0), window=frame_contenido, anchor="nw")
+
+        def actualizar_scrollregion(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            canvas.itemconfig(canvas_window, width=canvas.winfo_width())
+
+        frame_contenido.bind("<Configure>", actualizar_scrollregion)
+
+        return canvas, frame_contenido
 
     def crear_header(self):
         btn_Guardar = Crear.crear_btn(self.Crear,text="Guardar",ajsutes=self.ParametroAjuste)
@@ -44,11 +60,36 @@ class ViewAjuste(tk.Frame):
 
     def crear_form(self):
         self.crear_labelframe()
-        espaciador = tk.Frame(self.frame_contenido, width=200, height=100, bg=self.ParametroAjuste.color_frame)
+        espaciador = tk.Frame(self.frame_contenido, width=125, height=100, bg=self.ParametroAjuste.color_frame)
         espaciador.grid(row=0, column=0)
-        espaciador = tk.Frame(self.frame_contenido, width=200, height=100, bg=self.ParametroAjuste.color_frame)
-        espaciador.grid(row=0, column=1)
 
+        #region Empresa
+        label = tk.Label(self.marco_empresa, text="Nombre", bg=self.ParametroAjuste.color_frame, font=('Arial', 12, 'bold'))
+        label.grid(row=1, column=2, padx=10, pady=5, sticky="w")
+        self.empresa_nombre = ttk.Entry(self.marco_empresa,width=50, font=('Arial', 12, 'bold'))
+        self.empresa_nombre.grid(row=1, column=3, padx=10, pady=5, sticky="ew")
+        self.empresa_nombre.insert(0,self.ParametroAjuste.empresa_nombre)
+
+        label = tk.Label(self.marco_empresa, text="Teléfono", bg=self.ParametroAjuste.color_frame, font=('Arial', 12, 'bold'))
+        label.grid(row=2, column=2, padx=10, pady=5, sticky="w")
+        self.empresa_telefono = ttk.Entry(self.marco_empresa,width=50, font=('Arial', 12, 'bold'))
+        self.empresa_telefono.grid(row=2, column=3, padx=10, pady=5, sticky="ew")
+        self.empresa_telefono.insert(0,self.ParametroAjuste.empresa_telefono)
+
+        label = tk.Label(self.marco_empresa, text="Correo", bg=self.ParametroAjuste.color_frame, font=('Arial', 12, 'bold'))
+        label.grid(row=3, column=2, padx=10, pady=5, sticky="w")
+        self.empresa_correo = ttk.Entry(self.marco_empresa,width=50, font=('Arial', 12, 'bold'))
+        self.empresa_correo.grid(row=3, column=3, padx=10, pady=5, sticky="ew")
+        self.empresa_correo.insert(0,self.ParametroAjuste.empresa_correo)
+
+        label = tk.Label(self.marco_empresa, text="Dirección", bg=self.ParametroAjuste.color_frame, font=('Arial', 12, 'bold'))
+        label.grid(row=4, column=2, padx=10, pady=5, sticky="w")
+        self.empresa_direccion = tk.Text(self.marco_empresa,width=50, height=5, relief="solid",font=('Arial', 12, 'bold'))
+        self.empresa_direccion.grid(row=4, column=3, padx=10, pady=5, sticky="ew")
+        self.empresa_direccion.insert("1.0",self.ParametroAjuste.empresa_direccion)
+        #endregion
+
+        #region General
         label = tk.Label(self.marco_general, text="Color de fondo", bg=self.ParametroAjuste.color_frame, font=('Arial', 12, 'bold'))
         label.grid(row=1, column=1, padx=10, pady=5, sticky="w")
         cuadro_color_fondo = tk.Label(self.marco_general, width=5, height=2, bg=self.ParametroAjuste.color_fondo, relief="solid", bd=1)
@@ -64,7 +105,9 @@ class ViewAjuste(tk.Frame):
         entry = Crear.crear_btn(self.Crear,text="Cambiar",ajsutes=self.ParametroAjuste)
         entry.config(command=lambda: self.elegir_color("color_frame", cuadro_color_frame))
         entry.grid(row=2, column=2, padx=10, pady=5, sticky="ew",in_=self.marco_general)
+        #endregion
 
+        #region Botones
         label = tk.Label(self.marco_botones, text="Color de fondo del botón", bg=self.ParametroAjuste.color_frame, font=('Arial', 12, 'bold'))
         label.grid(row=1, column=1, padx=10, pady=5, sticky="w")
         cuadro_color_btn_1 = tk.Label(self.marco_botones, width=5, height=2, bg=self.ParametroAjuste.color_btn_1, relief="solid", bd=1)
@@ -97,23 +140,9 @@ class ViewAjuste(tk.Frame):
         entry = Crear.crear_btn(self.Crear,text="Cambiar",ajsutes=self.ParametroAjuste)
         entry.config(command=lambda: self.elegir_color("color_btn_4", cuadro_color_btn_4))
         entry.grid(row=4, column=2, padx=10, pady=5, sticky="ew",in_=self.marco_botones)
+        #endregion
 
-
-
-        frame = tk.Frame(self.marco_logo, width=200, height=200, bg="gray")
-        frame.grid(row=2, column=2, padx=10, pady=5, sticky="ew")
-        label_imagen = tk.Label(frame)
-        label_imagen.pack()
-        imagen = Image.open(self.ParametroAjuste.img_logo)
-        imagen.thumbnail((200, 200))
-        imagen_actual = ImageTk.PhotoImage(imagen)
-        label_imagen.config(image=imagen_actual)
-        label_imagen.image = imagen_actual
-        entry = Crear.crear_btn(self.Crear,text="Cambiar",ajsutes=self.ParametroAjuste)
-        entry.config(command=lambda: self.cambiar_imagen("img_login_sing",label_imagen))
-        entry.grid(row=1, column=2, padx=10, pady=5, sticky="ew",in_=self.marco_logo)
-
-
+        #region SMTP
         label = tk.Label(self.marco_servidor_correo, text="Servidor SMTP", bg=self.ParametroAjuste.color_frame, font=('Arial', 12, 'bold'))
         label.grid(row=2, column=2, padx=10, pady=5, sticky="w")
         self.smtp_servidor = ttk.Entry(self.marco_servidor_correo,width=50, font=('Arial', 12, 'bold'))
@@ -141,37 +170,57 @@ class ViewAjuste(tk.Frame):
         btn_probar_coneccion = Crear.crear_btn(self.Crear,text="Probar la conexión SMTP",ajsutes=self.ParametroAjuste)
         btn_probar_coneccion.grid(row=6, column=2, padx=10, pady=5, sticky="w",in_=self.marco_servidor_correo)
         btn_probar_coneccion.config(command=self.guardar)
+        #endregion
 
-
+        #region Logo
+        frame = tk.Frame(self.marco_logo, width=200, height=200, bg="gray")
+        frame.grid(row=2, column=2, padx=10, pady=5, sticky="ew")
+        label_imagen = tk.Label(frame)
+        label_imagen.pack()
+        imagen = Image.open(self.ParametroAjuste.img_logo)
+        imagen.thumbnail((200, 200))
+        imagen_actual = ImageTk.PhotoImage(imagen)
+        label_imagen.config(image=imagen_actual)
+        label_imagen.image = imagen_actual
+        entry = Crear.crear_btn(self.Crear,text="Cambiar",ajsutes=self.ParametroAjuste)
+        entry.config(command=lambda: self.cambiar_imagen("img_login_sing",label_imagen))
+        entry.grid(row=1, column=2, padx=10, pady=5, sticky="ew",in_=self.marco_logo)
+        #endregion
 
     def crear_labelframe(self):
-        self.frame_contenido.grid_columnconfigure(2, weight=1)
-        self.frame_contenido.grid_columnconfigure(3, weight=1)
-        self.frame_contenido.grid_rowconfigure(1, weight=1)
-        self.frame_contenido.grid_rowconfigure(2, weight=1)
+        self.canvas.grid_columnconfigure(2, weight=1)
+        self.canvas.grid_columnconfigure(3, weight=1)
+        self.canvas.grid_rowconfigure(1, weight=1)
+        self.canvas.grid_rowconfigure(2, weight=1)
         style = ttk.Style()
         style.configure("Custom.TLabelframe.Label", foreground=self.ParametroAjuste.color_frame)
         style.configure("Custom.TLabelframe", background=self.ParametroAjuste.color_frame)
 
+
+        self.marco_empresa = ttk.LabelFrame(self.frame_contenido, text="Datos de la empresa", style="Custom.TLabelframe")
+        titulo = tk.Label(self.marco_empresa, text="Datos de la empresa", fg="black", bg=self.ParametroAjuste.color_frame, font=("Arial", 12, "bold"))
+        self.marco_empresa.configure(labelwidget=titulo)
+        self.marco_empresa.grid(row=1,column=1, padx=10, pady=10, sticky="nsew")
+
         self.marco_general = ttk.LabelFrame(self.frame_contenido, text="Datos", style="Custom.TLabelframe")
         titulo = tk.Label(self.marco_general, text="Datos", fg="black", bg=self.ParametroAjuste.color_frame, font=("Arial", 12, "bold"))
         self.marco_general.configure(labelwidget=titulo)
-        self.marco_general.grid(row=1,column=1, padx=10, pady=10, sticky="nsew")
+        self.marco_general.grid(row=1,column=2, padx=10, pady=10, sticky="nsew")
 
         self.marco_botones = ttk.LabelFrame(self.frame_contenido, text="Datos", style="Custom.TLabelframe")
         titulo = tk.Label(self.marco_botones, text="Datos", fg="black", bg=self.ParametroAjuste.color_frame, font=("Arial", 12, "bold"))
         self.marco_botones.configure(labelwidget=titulo)
-        self.marco_botones.grid(row=1,column=2, padx=10, pady=10, sticky="nsew")
+        self.marco_botones.grid(row=2,column=1, padx=10, pady=10, sticky="nsew")
 
         self.marco_logo = ttk.LabelFrame(self.frame_contenido, text="Datos", style="Custom.TLabelframe")
         titulo = tk.Label(self.marco_logo, text="Datos", fg="black", bg=self.ParametroAjuste.color_frame, font=("Arial", 12, "bold"))
         self.marco_logo.configure(labelwidget=titulo)
-        self.marco_logo.grid(row=2,column=1, padx=10, pady=10, sticky="nsew")
+        self.marco_logo.grid(row=2,column=2, padx=10, pady=10, sticky="nsew")
 
         self.marco_servidor_correo = ttk.LabelFrame(self.frame_contenido, text="Datos", style="Custom.TLabelframe")
         titulo = tk.Label(self.marco_servidor_correo, text="Datos", fg="black", bg=self.ParametroAjuste.color_frame, font=("Arial", 12, "bold"))
         self.marco_servidor_correo.configure(labelwidget=titulo)
-        self.marco_servidor_correo.grid(row=2,column=2, padx=10, pady=10, sticky="nsew")
+        self.marco_servidor_correo.grid(row=3,column=1, padx=10, pady=10, sticky="nsew")
 
     def elegir_color(self,ajuste,cuadro_color_fondo):
         color = colorchooser.askcolor(title="Selecciona un color")

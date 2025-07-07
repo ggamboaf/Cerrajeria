@@ -9,6 +9,9 @@ import shutil
 
 class ViewTree(tk.Frame):
     def __init__(self, master=None,model=None,on_select=None,on_click=None,navegacion=None):
+        self.entry_filtro = None
+        self.frame_filtro = None
+        self.tree = None
         self.ParametroAjuste = ParametroAjuste()
         self.Crear = Crear()
         super().__init__(master, bg=self.ParametroAjuste.color_fondo)
@@ -16,6 +19,8 @@ class ViewTree(tk.Frame):
         self.on_click = on_click
         self.model = model
         self.navegacion = navegacion
+        self.items = None
+        self.filtros_activos = {}
         self.pack(fill=tk.BOTH, expand=True)
         self.frame_contenido_header = self.crear_area_contenido_header()
         self.frame_contenido = self.crear_area_contenido()
@@ -41,36 +46,51 @@ class ViewTree(tk.Frame):
         return frame_contenido
 
     def crear_header(self):
-        x = 5
-        y = 5
-        for navegacion in self.navegacion:
-            if x != 5:
-                x += 15
-            entry = Crear.crear_btn_navegacion(self.Crear, text=navegacion, ajsutes=self.ParametroAjuste)
-            entry.config(state="disabled")
-            entry.place(x=x, y=15,in_=self.frame_contenido_header)
+        frame_labels = tk.Frame(self.frame_contenido_header,bg=self.ParametroAjuste.color_frame)
+        frame_labels.pack(fill=tk.BOTH,pady=10)
+        count = len(self.navegacion)-1
+        for index,navegacion in enumerate(self.navegacion):
+            entry = Crear.crear_btn_navegacion(self.Crear, text=navegacion['descripcion'], ajsutes=self.ParametroAjuste)
+            if index == count:
+                entry.config(state="disabled")
+            entry.pack(side="left", padx=10, in_=frame_labels)
+
+        btn_agregar_filtro = Crear.crear_btn(self.Crear, text="+", ajsutes=self.ParametroAjuste)
+        btn_agregar_filtro.pack(side="right",  padx=10, pady=0, in_=frame_labels)
+        btn_agregar_filtro.config(command=self.agregar_filtro,width=1)
+        self.entry_filtro = ttk.Entry(frame_labels,width=20)
+        self.entry_filtro.pack(side="right", padx=0, pady=0)
+        label = tk.Label(frame_labels, text="Agregar filtro", bg=self.ParametroAjuste.color_frame, font=('Arial', 12, 'bold'),fg='#4f4e4d')
+        label.pack(side="right", padx=0, pady=0)
+
+
+
+        frame_buttons = tk.Frame(self.frame_contenido_header,bg=self.ParametroAjuste.color_frame)
+        frame_buttons.pack(fill=tk.BOTH,pady=10)
 
         btn_crear = Crear.crear_btn(self.Crear,text="Crear",ajsutes=self.ParametroAjuste)
-        btn_crear.place(x=5, y=50,in_=self.frame_contenido_header)
+        btn_crear.pack(side="left", padx=10, in_=frame_buttons)
         btn_crear.config(command=self.crear)
 
         btn_crear = Crear.crear_btn(self.Crear,text="Importar",ajsutes=self.ParametroAjuste)
-        btn_crear.place(x=150, y=50,in_=self.frame_contenido_header)
+        btn_crear.pack(side="left", padx=10,in_=frame_buttons)
         btn_crear.config(command=self.importar)
 
         btn_crear = Crear.crear_btn(self.Crear,text="Exportar",ajsutes=self.ParametroAjuste)
-        btn_crear.place(x=300, y=50,in_=self.frame_contenido_header)
-        btn_crear.config(command=self.crear)
+        btn_crear.pack(side="left", padx=10, in_=frame_buttons)
+        btn_crear.config(command=self.exportar)
+
+        self.frame_filtro = frame_buttons
 
     def crear_tabla(self):
         columnas = self.model.obtener_columnas_para_treeview()
 
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("Custom.Treeview.Heading",
-                        background="#4caf50",  # Fondo del encabezado
-                        foreground="white",  # Color del texto
-                        font=("Arial", 14, "bold"))  # Fuente del encabezado
+        # style.configure("Custom.Treeview.Heading",
+        #                 background="#4caf50",  # Fondo del encabezado
+        #                 foreground="white",  # Color del texto
+        #                 font=("Arial", 14, "bold"))  # Fuente del encabezado
 
         self.tree = ttk.Treeview(self.frame_contenido,style="Custom.Treeview", columns=columnas, show="headings")
 
@@ -104,7 +124,7 @@ class ViewTree(tk.Frame):
         if self.on_select:
             item = self.tree.focus()
             valores = self.tree.item(item, "values")
-            self.on_select(valores,self.model,self.navegacion)
+            self.on_select(valores,self.model,self.navegacion,nuevo=False)
 
     def crear(self):
         if self.on_click:
@@ -143,7 +163,7 @@ class ViewTree(tk.Frame):
         self.tree.pack(fill=tk.BOTH, expand=True)
 
     def seleccionar_archivo(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Archivos Excel", "*.xlsx *.xls")])
+        file_path = filedialog.askopenfilename(defaultextension=".xlsx",filetypes=[("Archivos Excel", "*.xlsx")],title="Guardar como")
         if file_path:
             self.datosExcel = pd.read_excel(file_path, engine='openpyxl')
             self.mostrar_tabla()
@@ -226,7 +246,56 @@ class ViewTree(tk.Frame):
         self.popup.destroy()
         self.load()
 
-
     def exportar(self):
-        pass
+        datos = self.model.obtener_datos_para_exportar()
+        df = pd.DataFrame(datos)
 
+        file_path = filedialog.asksaveasfilename(defaultextension=".xlsx",filetypes=[("Archivos Excel", "*.xlsx")],title="Guardar como",initialfile=f"{self.model.xlsx_Name}")
+
+        if file_path:
+            df.to_excel(file_path, index=False)
+            messagebox.showinfo("Éxito", f"Datos exportados correctamente a:\n{file_path}")
+
+    def aplicar_filtros(self):
+        if self.filtros_activos:
+            if self.items is None:
+                self.items = self.tree.get_children()
+            for item in  self.items:
+                valores = self.tree.item(item, "values")
+                texto = " ".join(valores).lower()
+                visible = any(f.lower() in texto for f in self.filtros_activos.values())
+                if visible:
+                    self.tree.reattach(item, '', 'end')
+                else:
+                    self.tree.detach(item)
+
+    def agregar_filtro(self):
+        texto = self.entry_filtro.get().strip()
+        if texto and texto not in self.filtros_activos.values():
+            clave = f"filtro_{len(self.filtros_activos)}"
+            if self.filtros_activos:
+                self.desaplicar_filtros()
+            self.filtros_activos[clave] = texto
+            self.mostrar_filtros()
+            self.aplicar_filtros()
+        self.entry_filtro.delete(0, tk.END)
+
+    def eliminar_filtro(self,clave):
+        if clave in self.filtros_activos:
+            del self.filtros_activos[clave]
+            self.mostrar_filtros()
+            self.desaplicar_filtros()
+            self.aplicar_filtros()
+
+    def mostrar_filtros(self):
+        for widget in self.frame_filtro.winfo_children():
+            widget.destroy()
+        for clave, texto in self.filtros_activos.items():
+            subframe = tk.Frame(self.frame_filtro, bd=1, relief="solid", padx=5, pady=2)
+            tk.Label(subframe, text=texto).pack(side="right")
+            tk.Button(subframe, text="❌", command=lambda c=clave: self.eliminar_filtro(c)).pack(side="right")
+            subframe.pack(side="right", padx=5)
+
+    def desaplicar_filtros(self):
+        for item in  self.items:
+            self.tree.reattach(item, '', 'end')
