@@ -1,4 +1,4 @@
-from models.models import *
+from models import *
 
 class ParametroAjuste:
     def __init__(self):

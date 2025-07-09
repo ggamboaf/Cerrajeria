@@ -1,6 +1,7 @@
 import tkinter as tk
 import socket
 import sys
+from utils.setup_db import inicializar_db
 from views.view_login import ViewLogin
 from views.view_principal import ViewPrincipal
 
@@ -15,6 +16,7 @@ def verificar_instancia_unica(puerto=65432):
 socket_bloqueo = verificar_instancia_unica()
 
 def start():
+    inicializar_db()
     login_root = tk.Tk()
     ViewLogin(login_root, on_success=mostrar_ventana_principal,on_reset=start)
     login_root.mainloop()

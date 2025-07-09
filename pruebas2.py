@@ -1,73 +1,60 @@
+
 import tkinter as tk
-from tkinter import ttk
+from tkinter import messagebox
+from PIL import Image, ImageTk
 
-# Datos de ejemplo
-datos = [
-    ("001", "Juan", "Ventas"),
-    ("002", "Ana", "Marketing"),
-    ("003", "Luis", "Ventas"),
-    ("004", "Marta", "TI"),
-    ("005", "Carlos", "Marketing"),
-]
+class ViewLogin:
+    def __init__(self, master, on_success, on_reset):
+        self.master = master
+        self.on_success = on_success
+        self.on_reset = on_reset
 
-filtros_activos = {}
+        self.master.title("Login")
+        self.master.geometry("600x400")
+        self.master.minsize(400, 300)
 
-def aplicar_filtros():
-    items = tree.get_children()
-    for item in tree.get_children():
-        valores = tree.item(item, "values")
-        texto = " ".join(valores).lower()
-        visible = all(f.lower() in texto for f in filtros_activos.values())
-        if visible:
-            tree.reattach(item, '', 'end')
-        else:
-            tree.detach(item)
+        self.frame = tk.Frame(master, bg="#f0f0f0")
+        self.frame.pack(fill="both", expand=True)
 
-def agregar_filtro():
-    texto = entrada_filtro.get().strip()
-    if texto and texto not in filtros_activos.values():
-        clave = f"filtro_{len(filtros_activos)}"
-        filtros_activos[clave] = texto
-        mostrar_filtros()
-        aplicar_filtros()
-    entrada_filtro.delete(0, tk.END)
+        self.frame.columnconfigure(0, weight=1)
+        self.frame.rowconfigure(0, weight=1)
 
-def eliminar_filtro(clave):
-    if clave in filtros_activos:
-        del filtros_activos[clave]
-        mostrar_filtros()
-        aplicar_filtros()
+        self.login_frame = tk.Frame(self.frame, bg="white", padx=20, pady=20, relief="groove", bd=2)
+        self.login_frame.grid(row=0, column=0, sticky="nsew", padx=100, pady=50)
 
-def mostrar_filtros():
-    for widget in frame_filtros.winfo_children():
-        widget.destroy()
-    for clave, texto in filtros_activos.items():
-        subframe = tk.Frame(frame_filtros, bd=1, relief="solid", padx=5, pady=2)
-        tk.Label(subframe, text=texto).pack(side="left")
-        tk.Button(subframe, text="❌", command=lambda c=clave: eliminar_filtro(c)).pack(side="right")
-        subframe.pack(side="left", padx=5)
+        for i in range(6):
+            self.login_frame.rowconfigure(i, weight=1)
+        self.login_frame.columnconfigure(0, weight=1)
 
-# Ventana principal
-root = tk.Tk()
-root.title("Filtros dinámicos en Treeview")
+        self.title_label = tk.Label(self.login_frame, text="Iniciar Sesión", font=("Arial", 16, "bold"), bg="white")
+        self.title_label.grid(row=0, column=0, sticky="n", pady=(0, 10))
 
-entrada_filtro = tk.Entry(root)
-entrada_filtro.pack(pady=5)
+        self.email_label = tk.Label(self.login_frame, text="Correo Electrónico", bg="white", anchor="w")
+        self.email_label.grid(row=1, column=0, sticky="ew", pady=(5, 0))
 
-boton_agregar = tk.Button(root, text="Agregar filtro", command=agregar_filtro)
-boton_agregar.pack(pady=5)
+        self.email_entry = tk.Entry(self.login_frame)
+        self.email_entry.grid(row=2, column=0, sticky="ew", pady=(0, 10))
 
-frame_filtros = tk.Frame(root)
-frame_filtros.pack(pady=5)
+        self.password_label = tk.Label(self.login_frame, text="Contraseña", bg="white", anchor="w")
+        self.password_label.grid(row=3, column=0, sticky="ew", pady=(5, 0))
 
-columnas = ("ID", "Nombre", "Departamento")
-tree = ttk.Treeview(root, columns=columnas, show="headings")
-for col in columnas:
-    tree.heading(col, text=col)
-tree.pack()
+        self.password_entry = tk.Entry(self.login_frame, show="*")
+        self.password_entry.grid(row=4, column=0, sticky="ew", pady=(0, 10))
 
-# Insertar datos
-for fila in datos:
-    tree.insert("", "end", values=fila)
+        self.login_button = tk.Button(self.login_frame, text="Iniciar Sesión", command=self.verificar_user, bg="#4CAF50", fg="white")
+        self.login_button.grid(row=5, column=0, sticky="ew", pady=(10, 5))
 
-root.mainloop()
+        self.reset_button = tk.Button(self.login_frame, text="Restablecer contraseña", command=self.envio_codigo, bg="#2196F3", fg="white")
+        self.reset_button.grid(row=6, column=0, sticky="ew")
+
+    def verificar_user(self):
+        email = self.email_entry.get()
+        password = self.password_entry.get()
+        print(f"Verificando usuario: {email} con contraseña: {password}")
+        self.master.destroy()
+        self.on_success(email)
+
+    def envio_codigo(self):
+        print("Enviando código de restablecimiento...")
+        self.master.destroy()
+        self.on_reset()

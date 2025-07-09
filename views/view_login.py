@@ -7,7 +7,7 @@ from PIL import Image, ImageTk
 from utils.ajuste import ParametroAjuste
 from utils.crear import Crear
 import random
-from models.models import *
+from models import *
 
 
 class ViewLogin:

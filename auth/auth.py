@@ -1,17 +1,17 @@
 import json
 
-from models.models import User
+from models import *
 from utils.utils import encriptar_password, verificar_password
 from tkinter import messagebox
 from peewee import IntegrityError
 
 
-def registar_user(email, name, password, permisos=None):
+def registar_user(email, nombre,cedula, password, permisos=None):
     if permisos is None:
         permisos = {}
     hashed_password = encriptar_password(password)
     try:
-        User.create(email=email, nombre=nombre,cedula=cedula, password=hashed_password, permisos=json.dumps(permissions))
+        User.create(email=email, nombre=nombre,cedula=cedula, password=hashed_password, permisos=json.dumps(permisos))
         messagebox.showinfo("Éxito", "¡Usuario registrado exitosamente!")
     except IntegrityError:
         messagebox.showerror("Error", "¡El correo electrónico ya está registrado!")

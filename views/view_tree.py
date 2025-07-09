@@ -1,7 +1,7 @@
 import shutil
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-from models.models import *
+from models import *
 from utils.ajuste import ParametroAjuste
 from utils.crear import Crear
 import pandas as pd

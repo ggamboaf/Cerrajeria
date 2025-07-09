@@ -11,7 +11,7 @@ from tkcalendar import DateEntry
 from views.view_form import *
 from views.view_tree import *
 from views.view_ajuste import *
-from models.models import *
+from models import *
 
 class ViewPrincipal:
     def __init__(self, root,user):

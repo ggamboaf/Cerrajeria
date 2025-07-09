@@ -4,7 +4,7 @@ import pdfkit
 import xml.etree.ElementTree as ET
 
 from jinja2 import Template
-from models.models import *
+from models import *
 from utils.ajuste import ParametroAjuste
 
 class GenerarReporte:

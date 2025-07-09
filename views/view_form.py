@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 from utils.autocomplete_entry import AutocompleteEntry
-from models.models import *
+from models import *
 from utils.ajuste import ParametroAjuste
 from utils.crear import Crear
 

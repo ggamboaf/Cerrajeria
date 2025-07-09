@@ -1,11 +1,10 @@
 import tkinter as tk
-import models.models
 from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
 from utils.ajuste import ParametroAjuste
 from utils.generar_reporte import GenerarReporte
 from utils.enviar_correo import EnviarCorreo
-from models.models import *
+from models import *
 
 popup = None
 
