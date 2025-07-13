@@ -46,8 +46,10 @@ class ViewTree(tk.Frame):
         return frame_contenido
 
     def crear_header(self):
+        self.frame_contenido_header.lower()
         frame_labels = tk.Frame(self.frame_contenido_header,bg=self.ParametroAjuste.color_frame)
         frame_labels.pack(fill=tk.BOTH,pady=10)
+        frame_labels.lower()
         count = len(self.navegacion)-1
         for index,navegacion in enumerate(self.navegacion):
             entry = Crear.crear_btn_navegacion(self.Crear, text=navegacion['descripcion'], ajsutes=self.ParametroAjuste)
@@ -83,16 +85,12 @@ class ViewTree(tk.Frame):
         self.frame_filtro = frame_buttons
 
     def crear_tabla(self):
-        columnas = self.model.obtener_columnas_para_treeview()
+        df = pd.DataFrame(self.model.obtener_datos_para_treeview())
 
         style = ttk.Style()
         style.theme_use("clam")
-        # style.configure("Custom.Treeview.Heading",
-        #                 background="#4caf50",  # Fondo del encabezado
-        #                 foreground="white",  # Color del texto
-        #                 font=("Arial", 14, "bold"))  # Fuente del encabezado
 
-        self.tree = ttk.Treeview(self.frame_contenido,style="Custom.Treeview", columns=columnas, show="headings")
+        self.tree = ttk.Treeview(self.frame_contenido,style="Custom.Treeview", columns=list(df.columns), show="headings")
 
         vertical = ttk.Scrollbar(self.frame_contenido, orient="vertical", command=self.tree.yview)
         vertical.pack(side=tk.RIGHT, fill=tk.Y)
@@ -102,19 +100,16 @@ class ViewTree(tk.Frame):
         horizontal.pack(side=tk.BOTTOM, fill=tk.X)
         self.tree.configure(xscrollcommand=horizontal.set)
 
-        for columna in columnas:
-            field = next(filter(lambda x: x.name == columna, self.model._meta.sorted_fields))
+        for columna in df.columns:
+            field = next(filter(lambda x: x.help_text == columna, self.model._meta.sorted_fields))
             self.tree.heading(columna, text=f"{field.help_text}")
             if not field.mostrar_Tree:
                 self.tree.column(columna, width=0, stretch=False)
             else:
                 self.tree.column(columna, width=200, anchor="center")
 
-
-        datos = self.model.obtener_datos_para_treeview()
-
-        for fila in datos:
-            self.tree.insert("", tk.END, values=fila)
+        for _, row in df.iterrows():
+            self.tree.insert("", "end", values=list(row))
 
         self.tree.pack(fill=tk.BOTH, expand=True)
 

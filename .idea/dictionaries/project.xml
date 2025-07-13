@@ -4,8 +4,10 @@
       <w>codigo</w>
       <w>coneccion</w>
       <w>contrasena</w>
+      <w>creacion</w>
       <w>descripcion</w>
       <w>direccion</w>
+      <w>eliminacion</w>
       <w>navegacion</w>
       <w>telfono</w>
       <w>wkhtmltox</w>

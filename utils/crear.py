@@ -1,10 +1,14 @@
 import tkinter as tk
+
+import pandas as pd
+
+import models.models
 from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
 from utils.ajuste import ParametroAjuste
 from utils.generar_reporte import GenerarReporte
 from utils.enviar_correo import EnviarCorreo
-from models import *
+from models.models import *
 
 popup = None
 
@@ -273,12 +277,11 @@ class Crear:
         notebook = ttk.Notebook(notebook_frame, style='TNotebook')
         notebook.pack(side='bottom', fill='both', expand=True)
         for dato in datos:
-            columnas = dato['model'].obtener_columnas_para_treeviewrel()
             tab = tk.Frame(notebook,bg=self.ParametroAjuste.color_frame)
             notebook.add(tab, text=dato['tab_Name'])
-            self.crear_tabla(tab, dato['records'],columnas,dato['model'],dato['model_name'])
+            self.crear_tabla(tab, pd.DataFrame(dato['datos']),dato['model'],dato['model_name'])
 
-    def crear_tabla(self,tab, records,columnas,model,model_name):
+    def crear_tabla(self,tab, df,model,model_name):
         button_frame = tk.Frame(tab,bg=self.ParametroAjuste.color_frame)
         button_frame.pack(fill='x')
 
@@ -293,7 +296,7 @@ class Crear:
         #                 foreground="white",  # Color del texto
         #                 font=("Arial", 14, "bold"))  # Fuente del encabezado
 
-        tree = ttk.Treeview(tab,style="Custom.Treeview", columns=columnas, show="headings")
+        tree = ttk.Treeview(tab,style="Custom.Treeview", columns=list(df.columns), show="headings")
 
         vertical = ttk.Scrollbar(tab, orient="vertical", command=tree.yview)
         vertical.pack(side=tk.RIGHT, fill=tk.Y)
@@ -303,15 +306,17 @@ class Crear:
         horizontal.pack(side=tk.BOTTOM, fill=tk.X)
         tree.configure(xscrollcommand=horizontal.set)
 
-        for columna in columnas:
-            tree.heading(columna, text=columna[0])
-            if not columna[1]:
+        for columna in df.columns:
+            field = next(filter(lambda x: x.help_text == columna, model._meta.sorted_fields))
+            tree.heading(columna, text=f"{field.help_text}")
+            if not field.mostrar_Tree:
                 tree.column(columna, width=0, stretch=False)
             else:
                 tree.column(columna, width=200, anchor="center")
 
-        for fila in records:
-            tree.insert("", tk.END,iid=fila[0], tags=(model_name), values=fila)
+
+        for _, row in df.iterrows():
+            tree.insert("", "end",iid=row['ID'],tags=(model_name) ,values=list(row))
 
         tree.pack(fill=tk.BOTH, expand=True)
 

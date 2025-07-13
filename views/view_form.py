@@ -5,7 +5,8 @@ from utils.autocomplete_entry import AutocompleteEntry
 from models import *
 from utils.ajuste import ParametroAjuste
 from utils.crear import Crear
-
+from models.models import *
+from views.view_form_header import *
 popup = None
 
 class ViewForm(tk.Frame):
@@ -30,11 +31,9 @@ class ViewForm(tk.Frame):
         self.frame_contenido_tab = None
         self.load()
 
-
     def load(self):
         if hasattr(self.model, 'auto_Guardar') and  not self.id:
-            name = self.model.select().count() + 1
-            self.model = self.model.crear_actualizar_desde_dict({'nombre': f"{self.model.defalult_name} {name}"})
+            self.model = self.model.crear_actualizar_desde_dict()
             self.id = self.model.id
         if not self.id:
             self.crear_header()
@@ -76,33 +75,10 @@ class ViewForm(tk.Frame):
         return canvas, frame_contenido
 
     def crear_header(self):
-        frame_labels = tk.Frame(self.frame_contenido_header,bg=self.ParametroAjuste.color_frame)
-        frame_labels.pack(fill=tk.BOTH,pady=10)
-        count = len(self.navegacion)-1
-        for index, navegacion in enumerate(self.navegacion):
-            entry = Crear.crear_btn_navegacion(self.Crear, text=navegacion['descripcion'], ajsutes=self.ParametroAjuste)
-            # entry.config(command=lambda:  navegacion['funcion'](navegacion['model']))
-            entry.pack(side="left", padx=10, in_=frame_labels)
-            if index == count:
-                entry.config(state="disabled")
-            else:
-                entry.navegacion_id = index
-                entry.bind("<Button-1>",  self.ir_back_view)
-                label = tk.Label(frame_labels, text="/", bg=self.ParametroAjuste.color_frame, font=('Arial', 12, 'bold'), fg='#4f4e4d')
-                label.pack(side="left", padx=10)
-            setattr(frame_labels, f"{index}_field", entry)
+        ViewFormHeader(self.frame_contenido_header,self.navegacion,self.model)
 
-        frame_buttons = tk.Frame(self.frame_contenido_header,bg=self.ParametroAjuste.color_frame)
-        frame_buttons.pack(fill=tk.BOTH,pady=10)
-
-        if type(self.model.id) is int:
-            btn_Eliminar = Crear.crear_btn(self.Crear,text="Eliminar",ajsutes=self.ParametroAjuste)
-            btn_Eliminar.pack(side="left", padx=10, in_=frame_buttons)
-            btn_Eliminar.config(command=self.eliminar_model)
-
-        btn_Guardar = Crear.crear_btn(self.Crear,text="Guardar",ajsutes=self.ParametroAjuste)
-        btn_Guardar.pack(side="left", padx=10, in_=frame_buttons)
-        btn_Guardar.config(command=self.guardar)
+    def crear_form(self):
+        ViewFormHeader(self.frame_contenido_header,self.navegacion,self.model)
 
     def guardar(self):
         try:

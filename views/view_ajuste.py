@@ -250,6 +250,7 @@ class ViewAjuste(tk.Frame):
             setattr(self.ParametroAjuste, "smtp_puerto", self.smtp_puerto.get())
             setattr(self.ParametroAjuste, "smtp_usuario", self.smtp_usuario.get())
             setattr(self.ParametroAjuste, "smtp_contrasena", self.smtp_contrasena.get())
+            self.update()
         except Exception as e:
             print(e)
             messagebox.showerror("Error", f"❌ Error al conectar con el servidor SMTP: \n {e}")

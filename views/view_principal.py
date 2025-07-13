@@ -2,19 +2,32 @@ import tkinter as tk
 import calendar
 import json
 from datetime import date
-import numpy as np
+from tkinter import font
 
+import numpy as np
+from tkinter import PhotoImage
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from tkcalendar import DateEntry
 
+from models import models
 from views.view_form import *
 from views.view_tree import *
 from views.view_ajuste import *
-from models import *
+
+from utils.crear import Crear
+from models.models import *
 
 class ViewPrincipal:
     def __init__(self, root,user):
+        self.menu_vertical_frame = None
+        self.Crear = Crear()
+        self.iconos = None
+        self.menu_visible = None
+        self.menu_vertical = None
+        self.subopciones_frame = None
+        self.menu_horizontal = None
+        self.boton_mostrar_menu = None
         self.fecha_fin = None
         self.fecha_inicio = None
         self.user = user
@@ -24,39 +37,122 @@ class ViewPrincipal:
         self.root.title("Ventana Principal")
         self.root.bg = "#dee2e6"
         self.model = None
+        self.subMenu = []
+        self.opcion = None
 
         self.frame_contenido = None
 
-        self.menu_Principal = tk.Menu(root)
-        self.menu_Ventas = tk.Menu(root)
-        self.menu_Compras = tk.Menu(root)
-        self.menu_Contabilidad = tk.Menu(root)
-        self.menu_Configuracion = tk.Menu(root)
+        self.modelos_list = Modelo.obtener_datos_menu()
 
-        self.crear_MenuPrincipal()
-        self.crear_MenuVentas()
-        self.crear_MenuCompras()
-        self.crear_MenuContabilidad()
-        self.crear_Configuracion()
-
+        self.submenus_activos = []
         self.crear_area_contenido()
         # self.crear_Dashboard()
 
-        self.root.config(menu=self.menu_Principal)
+    def toggle_menu_vertical(self):
+        self.ocultar_todos_los_submenus()
+        x = self.boton_mostrar_menu.winfo_rootx() - self.root.winfo_rootx()
+        y = self.boton_mostrar_menu.winfo_rooty() - self.root.winfo_rooty() + self.boton_mostrar_menu.winfo_height()
+        self.menu_vertical_frame.lift()
+        self.menu_vertical_frame.place(x=x, y=y)
+        self.submenus_activos.append(self.menu_vertical_frame)
+
+    def mostrar_menu_horizontal(self, opcion):
+        if self.opcion is None:
+            self.opcion = opcion
+        elif self.opcion != opcion:
+            self.opcion = opcion
+
+        for widget in self.subopciones_frame.winfo_children():
+            widget.destroy()
+        if self.menu_vertical_frame is not None:
+            self._ocultar_submenus()
+
+        self.ocultar_todos_los_submenus()
+
+        for texto, submenu_items in  self.modelos_list['menu_Parent'].get(opcion, {}).items():
+            btn = tk.Button(
+                self.subopciones_frame, text=texto, font=("Helvetica", 11),
+                fg="white", bg="#555", relief="flat"
+            )
+            btn.pack(side="left", padx=5)
+            submenu_frame = tk.Frame(self.root, bg="#333", bd=1, relief="flat")
+
+            for item in submenu_items:
+                def accion(op=item):
+                    if op != 'Ajustes':
+                        modelo = Modelo.obtener_modelo(op)
+                        self.mostrar_vista_tree(model=modelo)
+                    else:
+                        self.mostrar_vista_ajuste()
+                    self.mostrar_menu_horizontal(self.opcion)
+                    self._ocultar_submenus()
+
+                sub_btn = tk.Button(
+                    submenu_frame, text=item, font=("Helvetica", 11),
+                    fg="white", bg="#333", relief="flat", anchor="w",
+                    command=accion
+                )
+                sub_btn.pack(fill="x", padx=10, pady=2)
+
+            def mostrar_submenu(event, frame=submenu_frame, boton=btn):
+                self._ocultar_submenus()
+                x = boton.winfo_rootx() - self.root.winfo_rootx()
+                y = boton.winfo_rooty() - self.root.winfo_rooty() + boton.winfo_height()
+                frame.place(x=x, y=y)
+                self.submenus_activos.append(frame)
+
+            btn.bind("<Button-1>", mostrar_submenu)
+
+    def ocultar_todos_los_submenus(self, event=None):
+        self.root.after(10000, self._ocultar_submenus)
+
+    def _ocultar_submenus(self):
+        for submenu in self.submenus_activos:
+            submenu.place_forget()
+        self.submenus_activos.clear()
 
     def crear_area_contenido(self):
         self.frame_contenido = tk.Frame(self.root, bg="white")
         self.frame_contenido.pack(fill=tk.BOTH, expand=True)
+        
+        self.menu_horizontal = tk.Frame(self.frame_contenido, bg="#555", height=40)
+        self.menu_horizontal.pack(fill="x", side="top")
+        
+        self.boton_mostrar_menu = tk.Button(
+            self.menu_horizontal, text="☰ Menú", font=("Helvetica", 12),
+            fg="white", bg="#555", relief="flat", command=self.toggle_menu_vertical
+        )
+        self.boton_mostrar_menu.pack(side="left", padx=10, pady=5)
+        
+        self.subopciones_frame = tk.Frame(self.menu_horizontal, bg="#555")
+        self.subopciones_frame.pack(fill=tk.BOTH, expand=True)
+        
+        self.iconos = {}
+        for clave, valor in self.modelos_list['menu_Principal'].items():
+            self.iconos[clave] = tk.PhotoImage(file=valor)
+
+        self.menu_vertical_frame = tk.Frame(self.frame_contenido, bg="#333", bd=1, relief="flat")
+        for texto in self.iconos:
+            btn = tk.Button(
+                self.menu_vertical_frame, text=texto, image=self.iconos[texto], compound="left",
+                font=("Helvetica", 12), fg="white", bg="#333", relief="flat", anchor="w",
+                command=lambda t=texto: self.mostrar_menu_horizontal(t)
+            )
+            btn.pack(fill="x", padx=10, pady=5)
+        # Evento global para ocultar submenús
+        self.root.bind("<Button-1>", self.ocultar_todos_los_submenus)
 
     def limpiar_crear_contenido(self):
         if self.frame_contenido is not None:
             self.frame_contenido.destroy()
         self.crear_area_contenido()
 
-
     def mostrar_vista_tree(self, valores=None,model=None,navegacion=None,nuevo=True,back=False):
         self.limpiar_crear_contenido()
-        self.model = model
+        if model is not None:
+            self.model = model
+        else:
+            model = self.model
         navegacion = [{
             'funcion': self.mostrar_vista_tree,
              'descripcion': model.descripcion,
@@ -95,98 +191,41 @@ class ViewPrincipal:
         vista = ViewForm(self.frame_contenido,model= self.model,ir_action_back=self.mostrar_vista_tree,navegacion=navegacion)
         vista.pack(fill=tk.BOTH, expand=True)
 
-
     def mostrar_vista_ajuste(self,model=None):
         self.limpiar_crear_contenido()
         vista = ViewAjuste(self.frame_contenido)
         vista.pack(fill=tk.BOTH, expand=True)
 
     def crear_MenuPrincipal(self):
-        self.menu_Principal = tk.Menu(self.root)
-        if self.permisos.get("menu_ventas", False) or self.permisos.get("admin", False):
-            self.menu_Principal.add_command(label="Ventas", command=self.mostrar_MenuVentas)
-        if self.permisos.get("menu_compras", False) or self.permisos.get("admin", False):
-            self.menu_Principal.add_command(label="Compras", command=self.mostrar_MenuCompras)
-        if self.permisos.get("menu_contabilidad", False) or self.permisos.get("admin", False):
-            self.menu_Principal.add_command(label="Contabilidad", command=self.mostrar_MenuContabilidad)
-        if self.permisos.get("menu_configuracion", False) or self.permisos.get("admin", False):
-            self.menu_Principal.add_command(label="Configuración", command=self.mostrar_MenuConfiguracion)
+        fuente_menu = font.Font(family="Helvetica", size=14)
+        menu_Principal = tk.Menu(self.root,font=fuente_menu)
+        self.menu_Principal = menu_Principal
+        for index, (nombre_menu, opciones) in enumerate(self.modelos_list[0].items()):
+            for opcion in opciones:
+                submenu_root = tk.Menu(self.root,font=fuente_menu)
+                # submenu_root.menu_id = index
 
-    def crear_MenuVentas(self):
-        self.menu_Ventas = tk.Menu(self.root)
-        self.menu_Ventas.add_command(label="Regresar a inicio", command=self.regresar_MenuPrincipal)
-        ventas_menu = tk.Menu(self.menu_Ventas, tearoff=0)
-        if self.permisos.get("menu_venta_nueva", False) or self.permisos.get("admin", False):
-            ventas_menu.add_command(label="Ventas", command=lambda: self.mostrar_vista_tree(model=OrdenVenta))
-        self.menu_Ventas.add_cascade(label="Menú Ventas", menu=ventas_menu)
+                menu_Principal.add_command(label=opcion, command=lambda opt=submenu_root: self.mostrar_MenuParent(opt))
+                self.subMenu.append(menu_Principal)
+                submenu_root.add_command(label="Regresar a inicio", command=self.regresar_MenuPrincipal)
+                submenuDict = next((item for item in self.modelos_list[1]['menu_Parent'] if item.get('menu_Principal') == opcion), None)
+                for clave, valor in submenuDict.items():
+                    if isinstance(valor, list):
+                        menu = tk.Menu(submenu_root, tearoff=0,font=fuente_menu)
+                        for index,menuItem in enumerate(valor):
+                            modelo = getattr(models, menuItem['modelo'])
+                            if menuItem['menu_nombre'] != 'Ajustes':
+                                menu.add_command(label=menuItem['menu_nombre'], command=lambda opt=modelo: self.mostrar_vista_tree(model=opt))
+                            else:
+                                menu.add_command(label=menuItem['menu_nombre'],command=lambda opt=modelo: self.mostrar_vista_ajuste(model=opt))
+                            if len(valor) > 1 and index < len(valor)-1:
+                                menu.add_separator()
+                        submenu_root.add_cascade(label=f"Menú {clave}", menu=menu)
 
-    def crear_MenuCompras(self):
-        self.menu_Compras = tk.Menu(self.root)
-        self.menu_Compras.add_command(label="Regresar a inicio", command=self.regresar_MenuPrincipal)
-        ventas_menu = tk.Menu(self.menu_Compras, tearoff=0)
-        if self.permisos.get("menu_compra_nueva", False) or self.permisos.get("admin", False):
-            ventas_menu.add_command(label="Compras", command=lambda: self.mostrar_vista_tree(model=OrdenCompra))
-        self.menu_Compras.add_cascade(label="Menú Compras", menu=ventas_menu)
+        self.root.config(menu=menu_Principal)
 
-    def crear_MenuContabilidad(self):
-        self.menu_Contabilidad = tk.Menu(self.root)
-        self.menu_Contabilidad.add_command(label="Regresar a inicio", command=self.regresar_MenuPrincipal)
-        menu_Contabilidad = tk.Menu(self.menu_Contabilidad, tearoff=0)
-        if self.permisos.get("menu_contabilidad_clientes_facturas", False) or self.permisos.get("admin", False):
-            menu_Contabilidad.add_command(label="Facturas", command=lambda: self.mostrar_vista_tree(model=FacturaCliente))
-            menu_Contabilidad.add_separator()
-        if self.permisos.get("menu_contabilidad_clientes_productos", False) or self.permisos.get("admin", False):
-            menu_Contabilidad.add_command(label="Productos", command=lambda: self.mostrar_vista_tree(model=Producto))
-            menu_Contabilidad.add_separator()
-        if self.permisos.get("menu_contabilidad_clientes_clientes", False) or self.permisos.get("admin", False):
-            menu_Contabilidad.add_command(label="Clientes", command=lambda: self.mostrar_vista_tree(model=Cliente))
-        self.menu_Contabilidad.add_cascade(label="Clientes", menu=menu_Contabilidad)
-
-        menu_Contabilidad = tk.Menu(self.menu_Contabilidad, tearoff=0)
-        if self.permisos.get("menu_contabilidad_proveedores_facturas", False) or self.permisos.get("admin", False):
-            menu_Contabilidad.add_command(label="Facturas", command=lambda: self.mostrar_vista_tree(model=FacturaProveedor))
-            menu_Contabilidad.add_separator()
-        if self.permisos.get("menu_contabilidad_proveedores_productos", False) or self.permisos.get("admin", False):
-            menu_Contabilidad.add_command(label="Productos", command=lambda: self.mostrar_vista_tree(model=Producto))
-            menu_Contabilidad.add_separator()
-        if self.permisos.get("menu_contabilidad_proveedores_proveedores", False) or self.permisos.get("admin", False):
-            menu_Contabilidad.add_command(label="Proveedores", command=lambda: self.mostrar_vista_tree(model=Proveedor))
-
-        self.menu_Contabilidad.add_cascade(label="Proveedores", menu=menu_Contabilidad)
-
-        menu_Contabilidad = tk.Menu(self.menu_Contabilidad, tearoff=0)
-        if self.permisos.get("menu_contabilidad_configuracion_impuesto_venta", False) or self.permisos.get("admin", False):
-            menu_Contabilidad.add_command(label="Impuestos de venta", command=lambda: self.mostrar_vista_tree(model=ImpuestoVenta))
-            menu_Contabilidad.add_separator()
-        if self.permisos.get("menu_contabilidad_configuracion_impuesto_compra", False) or self.permisos.get("admin", False):
-            menu_Contabilidad.add_command(label="Impuestos de compra",command=lambda: self.mostrar_vista_tree(model=ImpuestoCompra))
-
-        self.menu_Contabilidad.add_cascade(label="Configuraciones", menu=menu_Contabilidad)
-
-
-    def crear_Configuracion(self):
-        self.menu_Configuracion = tk.Menu(self.root)
-        self.menu_Configuracion.add_command(label="Regresar a inicio", command=self.regresar_MenuPrincipal)
-        menu_Configuracion = tk.Menu(self.menu_Configuracion, tearoff=0)
-        if self.permisos.get("menu_configuracion_ajuste", False) or self.permisos.get("admin", False):
-            menu_Configuracion.add_command(label="Ajustes", command=lambda: self.mostrar_vista_ajuste(Ajuste))
-            menu_Configuracion.add_separator()
-        if self.permisos.get("menu_configuracion_usuario", False) or self.permisos.get("admin", False):
-            menu_Configuracion.add_command(label="Usuarios", command=self.dummy_action)
-
-        self.menu_Configuracion.add_cascade(label="Menú configuración", menu=menu_Configuracion)
-
-    def mostrar_MenuVentas(self):
-        self.root.config(menu=self.menu_Ventas)
-
-    def mostrar_MenuCompras(self):
-        self.root.config(menu=self.menu_Compras)
-
-    def mostrar_MenuContabilidad(self):
-        self.root.config(menu=self.menu_Contabilidad)
-
-    def mostrar_MenuConfiguracion(self):
-        self.root.config(menu=self.menu_Configuracion)
+    def mostrar_MenuParent(self,menu_parent):
+        self.root.config(menu=menu_parent)
 
     def regresar_MenuPrincipal(self):
         self.limpiar_crear_contenido()
@@ -273,4 +312,8 @@ class ViewPrincipal:
     def aplicar_filtro(self):
         inicio = self.fecha_inicio.get_date()
         fin = self.fecha_fin.get_date()
+
+    def mantener_frente(self):
+        self.menu_vertical.lift()
+        self.root.after(100, self.mantener_frente)
 
