@@ -147,7 +147,7 @@ class ViewPrincipal:
 
     def limpiar_crear_contenido(self):
         if self.frame_contenido is not None:
-            self.frame_contenido.destroy()
+            self.frame_contenido =self.frame_contenido.destroy()
         self.crear_area_contenido()
 
     def mostrar_vista_tree(self, valores=None,model=None,navegacion=None,nuevo=True,back=False):

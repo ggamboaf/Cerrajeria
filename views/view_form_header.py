@@ -6,17 +6,18 @@ from utils.crear import Crear
 
 
 class ViewFormHeader(tk.Frame):
-    def __init__(self,master=None,navegacion=None,model=None):
+    def __init__(self,master=None,navegacion=None,model=None,user=None):
         self.ParametroAjuste = ParametroAjuste()
         self.Crear = Crear()
         super().__init__(master, bg=self.ParametroAjuste.color_fondo)
         self.frame_contenido_header = master
         self.navegacion = navegacion
+        self.user = user
         self.model = model
         self.crear_header()
 
     def crear_header(self):
-        permiso = self.master.master.user.get_permiso(self.model)
+        permiso = self.user.get_permiso(self.model)
         self.frame_contenido_header.lower()
         frame_labels = tk.Frame(self.frame_contenido_header, bg=self.ParametroAjuste.color_frame)
         frame_labels.pack(fill=tk.BOTH, pady=10)

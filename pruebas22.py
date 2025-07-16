@@ -1,23 +1,23 @@
-import socket
-import sys
-import tkinter as tk
+# Frame superior
+self.frame_contenido_report = tk.Frame(self.frame_contenido_body, bg=self.ParametroAjuste.color_frame)
+self.frame_contenido_report.pack(padx=10, pady=10, fill='x')
 
-def check_if_running(port=65432):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        s.bind(("localhost", port))
-    except socket.error:
-        print("La aplicación ya está en ejecución.")
-        sys.exit()
-    return s
+# Frame intermedio para la cuadrícula 2x2
+frame_cuadricula = tk.Frame(self.frame_contenido_body, bg="white")
+frame_cuadricula.pack(padx=10, pady=10, fill='both', expand=True)
 
-sock = check_if_running()
+# Configurar la cuadrícula 2x2
+for i in range(2):
+    frame_cuadricula.grid_rowconfigure(i, weight=1)
+    frame_cuadricula.grid_columnconfigure(i, weight=1)
 
-root = tk.Tk()
-root.title("App con Socket")
+# Crear los 4 LabelFrames
+for row in range(2):
+    for col in range(2):
+        lf = ttk.LabelFrame(frame_cuadricula, text=f"Sección {row*2 + col + 1}", padding=10)
+        lf.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
+        ttk.Label(lf, text=f"Contenido {row*2 + col + 1}").pack()
 
-label = tk.Label(root, text="Aplicación única en ejecución")
-label.pack()
-
-root.mainloop()
-sock.close()
+# Frame inferior (si lo tienes)
+self.frame_contenido_footer = tk.Frame(self.frame_contenido_body, bg=self.ParametroAjuste.color_frame)
+self.frame_contenido_footer.pack(padx=10, pady=10, fill='x')

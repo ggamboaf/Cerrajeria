@@ -37,6 +37,7 @@ class ViewTree(tk.Frame):
             self.frame_contenido = self.crear_area_contenido()
         self.crear_header()
         self.crear_tabla()
+
     def crear_area_contenido_header(self):
         frame_contenido_header = tk.Frame(self, height=100, bg=self.ParametroAjuste.color_frame)
         frame_contenido_header.pack(side="top", fill="x")
@@ -44,7 +45,8 @@ class ViewTree(tk.Frame):
 
     def crear_area_contenido(self):
         frame_contenido = tk.Frame(self, bg="white")
-        frame_contenido.place(relx=0.15, rely=0.15, relwidth=0.7, relheight=0.7)
+        frame_contenido.pack(fill=tk.BOTH, expand=True)
+        # frame_contenido.place(relx=0.15, rely=0.15, relwidth=0.7, relheight=0.7)
         return frame_contenido
 
     def crear_header(self):

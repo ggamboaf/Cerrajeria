@@ -142,7 +142,7 @@ class Crear:
             self.frame_contenido_tab.pack(padx=10, pady=10, fill='both', expand=True)
             self.crear_tab()
 
-    def crear_labelframe(self):
+    def crear_labelframe2(self):
         row = 1
         column = 1
         self.labelFrames = []
@@ -160,33 +160,52 @@ class Crear:
             else:
                 column += 1
 
-    def crear_select(self,field):
-        label = tk.Label(self.marco, text=f"{field.help_text}:", bg="white",font=('TkTextFont', 13, 'bold'))
+    def crear_labelframe(self,ajsutes,model,frame_contenido_labelFrame):
+        row = 1
+        column = 1
+        labelFrames = []
+        for x in range(model.cant_grupo):
+            style = ttk.Style()
+            style.configure("Custom.TLabelframe", background=ajsutes.color_frame)
+            marco = ttk.LabelFrame(frame_contenido_labelFrame, text="Datos", style="Custom.TLabelframe")
+            titulo = tk.Label(marco, text=model.grupo_nombres[x], fg="black", bg=ajsutes.color_frame, font=("Arial", 12, "bold"))
+            marco.configure(labelwidget=titulo)
+            marco.grid(row=row,column=column, padx=10, pady=10, sticky="nsew")
+            labelFrames.append(marco)
+            if column % 2 == 0:
+                row += 1
+                column = 1
+            else:
+                column += 1
+        return labelFrames
+
+    def crear_select(self,field,marco,model,frame_contenido):
+        label = tk.Label(marco, text=f"{field.help_text}:", bg="white",font=('TkTextFont', 13, 'bold'))
         label.grid(row=field.posicion, column=1, padx=10, pady=5, sticky="w")
         opciones = [op[0] for op in field.choices]
-        self.tipo_var = tk.StringVar()
-        entry = ttk.Combobox(self.marco, textvariable=self.tipo_var,values=opciones,width=40)
+        tipo_var = tk.StringVar()
+        entry = ttk.Combobox(marco, textvariable=tipo_var,values=opciones,width=40)
         entry.grid(row=field.posicion,  column=2, padx=10, pady=5, sticky="ew")
         if not field.mostrar_Form:
             entry.grid_remove()
             label.grid_remove()
-        if type(self.model.id) is int:
-            entry.insert(0, getattr(self.model, field.name))
-        setattr(self.frame_contenido, f"{field.name}_field", entry)
+        if type(model.id) is int:
+            entry.insert(0, getattr(model, field.name))
+        setattr(frame_contenido, f"{field.name}_field", entry)
 
-    def crear_char(self,field):
-        label = tk.Label(self.marco, text=f"{field.help_text}:", bg="white",font=('TkTextFont', 13, 'bold'))
+    def crear_char(self,field,marco,model,frame_contenido,ochange):
+        label = tk.Label(marco, text=f"{field.help_text}:", bg="white",font=('TkTextFont', 13, 'bold'))
         label.grid(row=field.posicion, column=1, padx=10, pady=5, sticky="w")
-        entry = ttk.Entry(self.marco,width=40)
+        entry = ttk.Entry(marco,width=40)
         entry.grid(row=field.posicion, column=2, padx=10, pady=5, sticky="ew")
         entry.field_nombre = field.name
         entry.help_text = field.help_text
         if not field.mostrar_Form:
             entry.grid_remove()
             label.grid_remove()
-        if type(self.model.id) is int:
-            if getattr(self.model, field.name):
-                entry.insert(0, getattr(self.model, field.name))
+        if type(model.id) is int:
+            if getattr(model, field.name):
+                entry.insert(0, getattr(model, field.name))
 
         if  field.default is not None:
             entry.insert(0, field.default)
@@ -198,98 +217,100 @@ class Crear:
             entry.valor_maximo = field.valor_maximo
 
         if field.ochange:
-            entry.bind("<KeyRelease>", self.ochange)
-        setattr(self.frame_contenido, f"{field.name}_field", entry)
+            entry.bind("<KeyRelease>", ochange)
+        setattr(frame_contenido, f"{field.name}_field", entry)
 
-    def crear_boolean(self,field):
-        label = tk.Label(self.marco, text=f"{field.help_text}:", bg=self.ParametroAjuste.color_frame,font=('TkTextFont', 13, 'bold'))
+    def crear_boolean(self,field,marco,model,frame_contenido):
+        label = tk.Label(marco, text=f"{field.help_text}:", bg=self.ParametroAjuste.color_frame,font=('TkTextFont', 13, 'bold'))
         label.grid(row=field.posicion, column=1, padx=10, pady=5, sticky="w")
         boolean_var = tk.BooleanVar()
-        boolean = tk.Checkbutton(self.marco, variable=boolean_var,bg=self.ParametroAjuste.color_frame)
+        boolean = tk.Checkbutton(marco, variable=boolean_var,bg=self.ParametroAjuste.color_frame)
         boolean.grid(row=field.posicion, column=2, padx=10, pady=5, sticky="ew")
         boolean_var.boolean = boolean
         if not field.mostrar_Form:
             boolean.grid_remove()
             label.grid_remove()
-        if type(self.model.id) is int:
-            boolean_var.set(getattr(self.model, field.name))
-        setattr(self.frame_contenido, f"{field.name}_field", boolean_var)
+        if type(model.id) is int:
+            boolean_var.set(getattr(model, field.name))
+        setattr(frame_contenido, f"{field.name}_field", boolean_var)
 
-    def crear_date(self,field):
-        label = tk.Label(self.marco, text=f"{field.help_text}:", bg="white",font=('TkTextFont', 13, 'bold'))
+    def crear_date(self,field,marco,model,frame_contenido,ochange):
+        label = tk.Label(marco, text=f"{field.help_text}:", bg="white",font=('TkTextFont', 13, 'bold'))
         label.grid(row=field.posicion, column=1, padx=10, pady=5, sticky="w")
-        entry = DateEntry(self.marco, width=12, background='darkblue',foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
+        entry = DateEntry(marco, width=12, background='darkblue',foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
         entry.grid(row=field.posicion, column=2, padx=10, pady=5, sticky="ew")
         if not field.mostrar_Form:
             entry.grid_remove()
             label.grid_remove()
-        if type(self.model.id) is int:
-            if getattr(self.model, field.name):
-                entry.set_date(getattr(self.model, field.name))
+        if type(model.id) is int:
+            if getattr(model, field.name):
+                entry.set_date(getattr(model, field.name))
 
         if field.lectura:
             entry.config(state="readonly")
 
         if field.ochange:
-            entry.bind("<KeyRelease>", self.ochange)
+            entry.bind("<KeyRelease>", ochange)
 
-        setattr(self.frame_contenido, f"{field.name}_field", entry)
+        setattr(frame_contenido, f"{field.name}_field", entry)
 
-    def crear_autocompletar(self,field):
-        label = tk.Label(self.marco, text=f"{field.help_text}:", bg="white",font=('TkTextFont', 13, 'bold'))
+    def crear_autocompletar(self,field,marco,model,frame_contenido,check_input,modelPadre=None):
+        if modelPadre is None:
+            modelPadre = model
+        label = tk.Label(marco, text=f"{field.help_text}:", bg="white",font=('TkTextFont', 13, 'bold'))
         label.grid(row=field.posicion, column=1, padx=10, pady=5, sticky="w")
         lista = field.rel_model.obtener_datos_para_atucompleteview()
-        entry = ttk.Entry(self.marco,width=40)
+        entry = ttk.Entry(marco,width=40)
         entry.grid(row=field.posicion, column=2, padx=10, pady=5, sticky="ew")
         entry.data_list = lista
-        entry.marco = self.marco
+        entry.marco = marco
         entry.listbox = None
         entry.referencia_id = 0
         entry.ochange = field.ochange
-        entry.bind("<KeyRelease>", self.check_input)
+        entry.bind("<KeyRelease>", check_input)
         if not field.mostrar_Form:
             entry.grid_remove()
             label.grid_remove()
-        if type(self.model.id) is int:
-            if getattr(self.model, field.name):
-                entry.insert(0, getattr(self.model, field.name).nombre)
-                entry.referencia_id = getattr(self.model, field.name).id
+        if type(model.id) is int:
+            if getattr(model, field.name):
+                entry.insert(0, getattr(model, field.name).nombre)
+                entry.referencia_id = getattr(model, field.name).id
 
         if isinstance(field, ForeignKey):
-            if field.rel_model.descripcion == self.modelPadre.descripcion:
-                entry.insert(0, self.modelPadre.id)
-                entry.referencia_id = self.modelPadre.id
+            if field.rel_model.descripcion == modelPadre.descripcion:
+                entry.insert(0, modelPadre.id)
+                entry.referencia_id = modelPadre.id
 
         if field.valor_maximo is not None:
             entry.valor_maximo = field.valor_maximo
         else:
             entry.valor_maximo = None
 
-        setattr(self.frame_contenido, f"{field.name}_field", entry)
+        setattr(frame_contenido, f"{field.name}_field", entry)
 
-    def crear_tab(self):
-        datos = self.model.obtener_datos_models_rel(self.model.id)
+    def crear_tab(self,model,frame_contenido,user):
+        datos = model.obtener_datos_models_rel(model.id)
         style = ttk.Style()
         style.theme_use('default')  # Asegúrate de usar un tema que permita personalización
         style.configure('TNotebook', background=self.ParametroAjuste.color_frame, borderwidth=0)
         style.configure('TNotebook.Tab', background=self.ParametroAjuste.color_frame, padding=10)
-        notebook_frame = tk.Frame(self.frame_contenido_tab, bg=self.ParametroAjuste.color_frame)
+        notebook_frame = tk.Frame(frame_contenido, bg=self.ParametroAjuste.color_frame)
         notebook_frame.pack(padx=10, pady=10, fill='both', expand=True)
         notebook = ttk.Notebook(notebook_frame, style='TNotebook')
         notebook.pack(side='bottom', fill='both', expand=True)
         for dato in datos:
             tab = tk.Frame(notebook,bg=self.ParametroAjuste.color_frame)
             notebook.add(tab, text=dato['tab_Name'])
-            self.crear_tabla(tab, pd.DataFrame(dato['datos']),dato['model'],dato['model_name'])
+            self.crear_tabla(tab, pd.DataFrame(dato['datos']),dato['model'],dato['model_name'],user)
 
-    def crear_tabla(self,tab, df,model,model_name):
+    def crear_tabla(self,tab, df,model,model_name,user):
         button_frame = tk.Frame(tab,bg=self.ParametroAjuste.color_frame)
         button_frame.pack(fill='x')
-        permiso = self.frame_contenido.master.master.user.get_permiso(model)
+        permiso = user.get_permiso(model)
         if permiso['creacion']:
             btn_Agregar = self.crear_btn(text="Agregar",ajsutes=self.ParametroAjuste)
             btn_Agregar.pack(anchor='nw', padx=5, pady=5,in_=button_frame)
-            btn_Agregar.config(command=lambda: self.modal_Agregar(model))
+            # btn_Agregar.config(command=lambda: self.modal_Agregar(model))
 
         style = ttk.Style()
         style.theme_use("clam")
@@ -322,7 +343,7 @@ class Crear:
 
         tree.pack(fill=tk.BOTH, expand=True)
 
-        tree.bind("<<TreeviewSelect>>", self.on_tree_select)
+        # tree.bind("<<TreeviewSelect>>", self.on_tree_select)
         
     def check_input(self, event):
         widget = event.widget

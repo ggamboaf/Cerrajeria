@@ -7,6 +7,7 @@ from utils.ajuste import ParametroAjuste
 from utils.crear import Crear
 from models.models import *
 from views.view_form_header import *
+from views.view_form_body import *
 popup = None
 
 class ViewForm(tk.Frame):
@@ -26,29 +27,37 @@ class ViewForm(tk.Frame):
         self.navegacion = navegacion
         self.Guardado = False
         self.pack(fill=tk.BOTH, expand=True)
-        self.frame_contenido_header = self.crear_area_contenido_header()
-        self.canvas, self.frame_contenido = self.crear_area_contenido()
+        # self.frame_contenido_header = self.crear_area_contenido_header()
+        # self.canvas, self.frame_contenido = self.crear_area_contenido()
+        self.frame_contenido_header = None
+        self.frame_contenido = None
+        self.canvas = None
         self.frame_contenido_labelFrame = None
         self.frame_contenido_tab = None
         self.load()
 
     def load(self):
+        self.frame_contenido_header = self.crear_area_contenido_header()
+        self.canvas, self.frame_contenido = self.crear_area_contenido()
         if hasattr(self.model, 'auto_Guardar') and  not self.id:
             self.model = self.model.crear_actualizar_desde_dict()
             self.id = self.model.id
         if not self.id:
             self.crear_header()
-            self.Crear.crear_form(self.frame_contenido, self.model,load=self.load,on_click_create_Model=self.on_click_create_Model,navegacion=self.navegacion,guardar=self.guardar)
+            self.crear_form()
+            # self.Crear.crear_form(self.frame_contenido, self.model,load=self.load,on_click_create_Model=self.on_click_create_Model,navegacion=self.navegacion,guardar=self.guardar)
         else:
-            self.frame_contenido.destroy()
-            self.frame_contenido_header.destroy()
-            self.canvas, self.frame_contenido = self.crear_area_contenido()
-            self.frame_contenido_header = self.crear_area_contenido_header()
+            # self.frame_contenido = self.frame_contenido.destroy()
+            # self.frame_contenido_header = self.frame_contenido_header.destroy()
+            # self.canvas = self.canvas.destroy()
+            # self.frame_contenido_header = self.crear_area_contenido_header()
+            # self.canvas, self.frame_contenido = self.crear_area_contenido()
             self.model =  self.baseModel.obtener_con_accion(self.id)
             self.navegacion[-1]['descripcion'] = self.model.nombre
             self.navegacion[-1]['model'] = self.model
             self.crear_header()
-            self.Crear.crear_form(self.frame_contenido, self.model,load=self.load,on_click_create_Model=self.on_click_create_Model,navegacion=self.navegacion,guardar=self.guardar)
+            self.crear_form()
+            # self.Crear.crear_form(self.frame_contenido, self.model,load=self.load,on_click_create_Model=self.on_click_create_Model,navegacion=self.navegacion,guardar=self.guardar)
         self.permiso()
 
     def permiso(self):
@@ -67,35 +76,42 @@ class ViewForm(tk.Frame):
                         pass
 
     def crear_area_contenido_header(self):
+        if self.frame_contenido_header is not None:
+            self.frame_contenido_header.destroy()
         frame_contenido_header = tk.Frame(self, height=100, bg="white")
         frame_contenido_header.pack(side="top", fill="x")
+
         return frame_contenido_header
 
     def crear_area_contenido(self):
+        if self.frame_contenido is not None:
+            self.frame_contenido.destroy()
         canvas = tk.Canvas(self,bg=self.ParametroAjuste.color_frame)
-        canvas.place(relx=0.15, rely=0.15, relwidth=0.7, relheight=0.7)
 
         scrollbar_y = tk.Scrollbar(self, orient=tk.VERTICAL, command=canvas.yview)
-        scrollbar_y.place(relx=0.85, rely=0.15, relheight=0.7)
-
-        canvas.configure(yscrollcommand=scrollbar_y.set)
 
         frame_contenido = tk.Frame(canvas, bg=self.ParametroAjuste.color_frame)
+
+        frame_contenido.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+
         canvas_window = canvas.create_window((0, 0), window=frame_contenido, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar_y.set)
 
-        def actualizar_scrollregion(event):
-            canvas.configure(scrollregion=canvas.bbox("all"))
-            canvas.itemconfig(canvas_window, width=canvas.winfo_width())
-
-        frame_contenido.bind("<Configure>", actualizar_scrollregion)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar_y.pack(side="right", fill="y")
 
         return canvas, frame_contenido
 
     def crear_header(self):
-        ViewFormHeader(self.frame_contenido_header,self.navegacion,self.model)
+        ViewFormHeader(self.frame_contenido_header,self.navegacion,self.model,self.user)
 
     def crear_form(self):
-        ViewFormHeader(self.frame_contenido_header,self.navegacion,self.model)
+        ViewFormBody(self.frame_contenido,self.navegacion,self.model,self.user,on_click_create_Model=self.on_click_create_Model)
 
     def guardar(self):
         try:
