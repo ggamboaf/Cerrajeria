@@ -207,6 +207,7 @@ class Crear:
         boolean_var = tk.BooleanVar()
         boolean = tk.Checkbutton(self.marco, variable=boolean_var,bg=self.ParametroAjuste.color_frame)
         boolean.grid(row=field.posicion, column=2, padx=10, pady=5, sticky="ew")
+        boolean_var.boolean = boolean
         if not field.mostrar_Form:
             boolean.grid_remove()
             label.grid_remove()
@@ -284,10 +285,11 @@ class Crear:
     def crear_tabla(self,tab, df,model,model_name):
         button_frame = tk.Frame(tab,bg=self.ParametroAjuste.color_frame)
         button_frame.pack(fill='x')
-
-        btn_Agregar = self.crear_btn(text="Agregar",ajsutes=self.ParametroAjuste)
-        btn_Agregar.pack(anchor='nw', padx=5, pady=5,in_=button_frame)
-        btn_Agregar.config(command=lambda: self.modal_Agregar(model))
+        permiso = self.frame_contenido.master.master.user.get_permiso(model)
+        if permiso['creacion']:
+            btn_Agregar = self.crear_btn(text="Agregar",ajsutes=self.ParametroAjuste)
+            btn_Agregar.pack(anchor='nw', padx=5, pady=5,in_=button_frame)
+            btn_Agregar.config(command=lambda: self.modal_Agregar(model))
 
         style = ttk.Style()
         style.theme_use("clam")
@@ -383,6 +385,8 @@ class Crear:
 
     def modal_Agregar(self,model):
         try:
+            permiso = self.frame_contenido_genral.master.master.user.get_permiso(model)
+            self.model = self.modelPadre
             self.verificar_fields_required()
             self.popup = tk.Toplevel(self.frame_contenido.master,bg=self.ParametroAjuste.color_frame)
             self.popup.title("Agregar")
@@ -405,11 +409,12 @@ class Crear:
             button_frame = tk.Frame( self.popup,bg=self.ParametroAjuste.color_frame)
             button_frame.pack(fill='x',pady=20)
 
-            btn_Agregar =  self.crear_btn(text="Agregar",contenedor=button_frame,ajsutes=self.ParametroAjuste)
-            btn_Agregar.pack(side="left", padx=10)
-            btn_Agregar.config(command= self.agregar_model)
+            if  permiso['creacion']:
+                btn_Agregar =  self.crear_btn(text="Agregar",contenedor=button_frame,ajsutes=self.ParametroAjuste)
+                btn_Agregar.pack(side="left", padx=10)
+                btn_Agregar.config(command= self.agregar_model)
 
-            if type(model.id) is int:
+            if type(model.id) is int and permiso['eliminacion']:
                 btn_Eliminar = self.crear_btn(text="Eliminar", contenedor=button_frame, ajsutes=self.ParametroAjuste)
                 btn_Eliminar.pack(side="left", padx=10)
                 btn_Eliminar.config(command=self.eliminar_model)
@@ -420,6 +425,19 @@ class Crear:
 
 
             self.crear_form(fields_frame,model,True)
+
+            if not permiso['escritura']:
+                sel = self.frame_contenido
+                for attr in sel.__dict__:
+                    if attr.endswith("_field"):
+                        try:
+                            entry = getattr(sel, attr)
+                            if isinstance(entry, tk.BooleanVar):
+                                entry.boolean.config(state='disabled')
+                            else:
+                                entry.config(state='disabled')
+                        except tk.TclError:
+                            pass
         except ValueError as e:
             return
 

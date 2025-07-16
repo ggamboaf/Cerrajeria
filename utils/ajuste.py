@@ -3,6 +3,7 @@ from models.models import *
 class ParametroAjuste:
     def __init__(self):
         self._valores = {
+            "color_menu": Ajuste.get(Ajuste.key == "color.menu").valor,
             "color_fondo": Ajuste.get(Ajuste.key == "color.fondo").valor,
             "color_frame": Ajuste.get(Ajuste.key == "color.frame").valor,
             "color_btn_1": Ajuste.get(Ajuste.key == "color.btn.1").valor,
@@ -25,7 +26,7 @@ class ParametroAjuste:
             super().__setattr__(k, v)
 
     def __setattr__(self, nombre, valor):
-        if nombre in ["color_fondo", "color_frame", "color_btn_1", "color_btn_2", "color_btn_3", "color_btn_4","smtp_servidor","smtp_puerto","smtp_usuario","smtp_contrasena"]:
+        if nombre in ["color_menu","color_fondo", "color_frame", "color_btn_1", "color_btn_2", "color_btn_3", "color_btn_4","smtp_servidor","smtp_puerto","smtp_usuario","smtp_contrasena"]:
             print(f"Se cambió '{nombre}' a {valor}")
             self.cambiar_color(nombre, valor)
         super().__setattr__(nombre, valor)

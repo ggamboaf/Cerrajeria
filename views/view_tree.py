@@ -2,13 +2,14 @@ import shutil
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from models import *
+from models.models import Auto, ForeignKey
 from utils.ajuste import ParametroAjuste
 from utils.crear import Crear
 import pandas as pd
 import shutil
 
 class ViewTree(tk.Frame):
-    def __init__(self, master=None,model=None,on_select=None,on_click=None,navegacion=None):
+    def __init__(self, master=None,model=None,on_select=None,on_click=None,navegacion=None,user=None):
         self.entry_filtro = None
         self.frame_filtro = None
         self.tree = None
@@ -18,6 +19,7 @@ class ViewTree(tk.Frame):
         self.on_select = on_select
         self.on_click = on_click
         self.model = model
+        self.user = user
         self.navegacion = navegacion
         self.items = None
         self.filtros_activos = {}
@@ -46,6 +48,7 @@ class ViewTree(tk.Frame):
         return frame_contenido
 
     def crear_header(self):
+        permiso = self.user.get_permiso(self.model)
         self.frame_contenido_header.lower()
         frame_labels = tk.Frame(self.frame_contenido_header,bg=self.ParametroAjuste.color_frame)
         frame_labels.pack(fill=tk.BOTH,pady=10)
@@ -70,9 +73,10 @@ class ViewTree(tk.Frame):
         frame_buttons = tk.Frame(self.frame_contenido_header,bg=self.ParametroAjuste.color_frame)
         frame_buttons.pack(fill=tk.BOTH,pady=10)
 
-        btn_crear = Crear.crear_btn(self.Crear,text="Crear",ajsutes=self.ParametroAjuste)
-        btn_crear.pack(side="left", padx=10, in_=frame_buttons)
-        btn_crear.config(command=self.crear)
+        if permiso['creacion']:
+            btn_crear = Crear.crear_btn(self.Crear,text="Crear",ajsutes=self.ParametroAjuste)
+            btn_crear.pack(side="left", padx=10, in_=frame_buttons)
+            btn_crear.config(command=self.crear)
 
         btn_crear = Crear.crear_btn(self.Crear,text="Importar",ajsutes=self.ParametroAjuste)
         btn_crear.pack(side="left", padx=10,in_=frame_buttons)

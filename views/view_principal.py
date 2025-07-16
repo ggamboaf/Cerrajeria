@@ -9,7 +9,7 @@ from tkinter import PhotoImage
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from tkcalendar import DateEntry
-
+from utils.ajuste import ParametroAjuste
 from models import models
 from views.view_form import *
 from views.view_tree import *
@@ -22,6 +22,7 @@ class ViewPrincipal:
     def __init__(self, root,user):
         self.menu_vertical_frame = None
         self.Crear = Crear()
+        self.ParametroAjuste = ParametroAjuste()
         self.iconos = None
         self.menu_visible = None
         self.menu_vertical = None
@@ -42,13 +43,14 @@ class ViewPrincipal:
 
         self.frame_contenido = None
 
-        self.modelos_list = Modelo.obtener_datos_menu()
+        self.modelos_list = Modelo.obtener_datos_menu(self.user)
 
         self.submenus_activos = []
         self.crear_area_contenido()
         # self.crear_Dashboard()
 
     def toggle_menu_vertical(self):
+        self._ocultar_submenus()
         self.ocultar_todos_los_submenus()
         x = self.boton_mostrar_menu.winfo_rootx() - self.root.winfo_rootx()
         y = self.boton_mostrar_menu.winfo_rooty() - self.root.winfo_rooty() + self.boton_mostrar_menu.winfo_height()
@@ -72,10 +74,10 @@ class ViewPrincipal:
         for texto, submenu_items in  self.modelos_list['menu_Parent'].get(opcion, {}).items():
             btn = tk.Button(
                 self.subopciones_frame, text=texto, font=("Helvetica", 11),
-                fg="white", bg="#555", relief="flat"
+                fg="white", bg=self.ParametroAjuste.color_menu, relief="flat"
             )
             btn.pack(side="left", padx=5)
-            submenu_frame = tk.Frame(self.root, bg="#333", bd=1, relief="flat")
+            submenu_frame = tk.Frame(self.root, bg=self.ParametroAjuste.color_menu, bd=1, relief="flat")
 
             for item in submenu_items:
                 def accion(op=item):
@@ -89,7 +91,7 @@ class ViewPrincipal:
 
                 sub_btn = tk.Button(
                     submenu_frame, text=item, font=("Helvetica", 11),
-                    fg="white", bg="#333", relief="flat", anchor="w",
+                    fg="white", bg=self.ParametroAjuste.color_menu, relief="flat", anchor="w",
                     command=accion
                 )
                 sub_btn.pack(fill="x", padx=10, pady=2)
@@ -98,6 +100,7 @@ class ViewPrincipal:
                 self._ocultar_submenus()
                 x = boton.winfo_rootx() - self.root.winfo_rootx()
                 y = boton.winfo_rooty() - self.root.winfo_rooty() + boton.winfo_height()
+                frame.lift()
                 frame.place(x=x, y=y)
                 self.submenus_activos.append(frame)
 
@@ -115,27 +118,27 @@ class ViewPrincipal:
         self.frame_contenido = tk.Frame(self.root, bg="white")
         self.frame_contenido.pack(fill=tk.BOTH, expand=True)
         
-        self.menu_horizontal = tk.Frame(self.frame_contenido, bg="#555", height=40)
+        self.menu_horizontal = tk.Frame(self.frame_contenido, bg=self.ParametroAjuste.color_menu, height=40)
         self.menu_horizontal.pack(fill="x", side="top")
         
         self.boton_mostrar_menu = tk.Button(
             self.menu_horizontal, text="☰ Menú", font=("Helvetica", 12),
-            fg="white", bg="#555", relief="flat", command=self.toggle_menu_vertical
+            fg="white", bg=self.ParametroAjuste.color_menu, relief="flat", command=self.toggle_menu_vertical
         )
         self.boton_mostrar_menu.pack(side="left", padx=10, pady=5)
         
-        self.subopciones_frame = tk.Frame(self.menu_horizontal, bg="#555")
+        self.subopciones_frame = tk.Frame(self.menu_horizontal, bg=self.ParametroAjuste.color_menu)
         self.subopciones_frame.pack(fill=tk.BOTH, expand=True)
         
         self.iconos = {}
         for clave, valor in self.modelos_list['menu_Principal'].items():
             self.iconos[clave] = tk.PhotoImage(file=valor)
 
-        self.menu_vertical_frame = tk.Frame(self.frame_contenido, bg="#333", bd=1, relief="flat")
+        self.menu_vertical_frame = tk.Frame(self.root, bg=self.ParametroAjuste.color_menu, bd=1, relief="flat")
         for texto in self.iconos:
             btn = tk.Button(
                 self.menu_vertical_frame, text=texto, image=self.iconos[texto], compound="left",
-                font=("Helvetica", 12), fg="white", bg="#333", relief="flat", anchor="w",
+                font=("Helvetica", 12), fg="white", bg=self.ParametroAjuste.color_menu, relief="flat", anchor="w",
                 command=lambda t=texto: self.mostrar_menu_horizontal(t)
             )
             btn.pack(fill="x", padx=10, pady=5)
@@ -158,11 +161,12 @@ class ViewPrincipal:
              'descripcion': model.descripcion,
             'model': self.model,
         }]
-        vista = ViewTree(self.frame_contenido,model=model, on_select=self.mostrar_vista_form,on_click=self.crear_vista_form,navegacion=navegacion)
+        vista = ViewTree(self.frame_contenido,model=model, on_select=self.mostrar_vista_form,on_click=self.crear_vista_form,navegacion=navegacion,user=self.user)
         vista.pack(fill=tk.BOTH, expand=True)
 
     def mostrar_vista_form(self, valores=False,model=None,navegacion=None,nuevo=True,back=False):
         self.limpiar_crear_contenido()
+        self.mostrar_menu_horizontal(self.opcion)
         self.model = model
         if nuevo:
             navegacion.append({
@@ -178,17 +182,18 @@ class ViewPrincipal:
         })
         else:
             del navegacion[-1]
-        vista = ViewForm(self.frame_contenido,id=valores[0],model= self.model,ir_action_back=self.mostrar_vista_tree,navegacion=navegacion,on_click_create_Model=self.mostrar_vista_form)
+        vista = ViewForm(self.frame_contenido,id=valores[0],model= self.model,ir_action_back=self.mostrar_vista_tree,navegacion=navegacion,on_click_create_Model=self.mostrar_vista_form,user=self.user)
         vista.pack(fill=tk.BOTH, expand=True)
 
     def crear_vista_form(self,navegacion):
         self.limpiar_crear_contenido()
+        self.mostrar_menu_horizontal(self.opcion)
         navegacion.append({
             'funcion': self.mostrar_vista_tree,
             'descripcion': "Nuevo",
             'model': self.model,
         })
-        vista = ViewForm(self.frame_contenido,model= self.model,ir_action_back=self.mostrar_vista_tree,navegacion=navegacion)
+        vista = ViewForm(self.frame_contenido,model= self.model,ir_action_back=self.mostrar_vista_tree,navegacion=navegacion,user=self.user)
         vista.pack(fill=tk.BOTH, expand=True)
 
     def mostrar_vista_ajuste(self,model=None):

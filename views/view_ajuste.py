@@ -90,21 +90,29 @@ class ViewAjuste(tk.Frame):
         #endregion
 
         #region General
-        label = tk.Label(self.marco_general, text="Color de fondo", bg=self.ParametroAjuste.color_frame, font=('Arial', 12, 'bold'))
+        label = tk.Label(self.marco_general, text="Color de fondo de menu", bg=self.ParametroAjuste.color_frame, font=('Arial', 12, 'bold'))
         label.grid(row=1, column=1, padx=10, pady=5, sticky="w")
-        cuadro_color_fondo = tk.Label(self.marco_general, width=5, height=2, bg=self.ParametroAjuste.color_fondo, relief="solid", bd=1)
-        cuadro_color_fondo.grid(row=1, column=3, padx=10, pady=5, sticky="ew")
+        cuadro_color_menu = tk.Label(self.marco_general, width=5, height=2, bg=self.ParametroAjuste.color_menu, relief="solid", bd=1)
+        cuadro_color_menu.grid(row=1, column=3, padx=10, pady=5, sticky="ew")
         entry = Crear.crear_btn(self.Crear,text="Cambiar",ajsutes=self.ParametroAjuste)
-        entry.config(command=lambda: self.elegir_color("color_fondo",cuadro_color_fondo))
+        entry.config(command=lambda: self.elegir_color("color_menu",cuadro_color_menu))
         entry.grid(row=1, column=2, padx=10, pady=5, sticky="ew",in_=self.marco_general)
 
-        label = tk.Label(self.marco_general, text="Color de frame", bg=self.ParametroAjuste.color_frame, font=('Arial', 12, 'bold'))
+        label = tk.Label(self.marco_general, text="Color de fondo", bg=self.ParametroAjuste.color_frame, font=('Arial', 12, 'bold'))
         label.grid(row=2, column=1, padx=10, pady=5, sticky="w")
+        cuadro_color_fondo = tk.Label(self.marco_general, width=5, height=2, bg=self.ParametroAjuste.color_fondo, relief="solid", bd=1)
+        cuadro_color_fondo.grid(row=2, column=3, padx=10, pady=5, sticky="ew")
+        entry = Crear.crear_btn(self.Crear,text="Cambiar",ajsutes=self.ParametroAjuste)
+        entry.config(command=lambda: self.elegir_color("color_fondo",cuadro_color_fondo))
+        entry.grid(row=2, column=2, padx=10, pady=5, sticky="ew",in_=self.marco_general)
+
+        label = tk.Label(self.marco_general, text="Color de frame", bg=self.ParametroAjuste.color_frame, font=('Arial', 12, 'bold'))
+        label.grid(row=3, column=1, padx=10, pady=5, sticky="w")
         cuadro_color_frame = tk.Label(self.marco_general, width=5, height=2, bg=self.ParametroAjuste.color_frame, relief="solid", bd=1)
-        cuadro_color_frame.grid(row=2, column=3, padx=10, pady=5, sticky="ew")
+        cuadro_color_frame.grid(row=3, column=3, padx=10, pady=5, sticky="ew")
         entry = Crear.crear_btn(self.Crear,text="Cambiar",ajsutes=self.ParametroAjuste)
         entry.config(command=lambda: self.elegir_color("color_frame", cuadro_color_frame))
-        entry.grid(row=2, column=2, padx=10, pady=5, sticky="ew",in_=self.marco_general)
+        entry.grid(row=3, column=2, padx=10, pady=5, sticky="ew",in_=self.marco_general)
         #endregion
 
         #region Botones

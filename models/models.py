@@ -182,17 +182,24 @@ class Modelo(BaseModel):
         return datos
 
     @classmethod
-    def obtener_datos_menu(cls):
+    def obtener_datos_menu(cls,usuario):
+        usuarioPermisos = None
+        if not usuario.admin:
+            usuarioPermisos = UserPermisos.select(UserPermisos.modelo_id).where(UserPermisos.usuario_id == usuario.id and UserPermisos.lectura == True)
+            usuarioPermisos = [permiso.modelo_id.modelo for permiso in usuarioPermisos]
+        else:
+            usuarioPermisos =  cls.select(cls.modelo)
+            usuarioPermisos =  [permiso.modelo for permiso in usuarioPermisos]
         dic = {}
-        menu_Principal = cls.select(cls.menu_root_nombre,cls.icon_path).where(cls.menu_root_nombre != "").order_by(cls.menu_root_index).distinct()
+        menu_Principal = cls.select(cls.menu_root_nombre,cls.icon_path).where((cls.menu_root_nombre != "") & (cls.modelo.in_(usuarioPermisos))).order_by(cls.menu_root_index).distinct()
         dic['menu_Principal'] = {record.menu_root_nombre: record.icon_path for record in menu_Principal}
         dic['menu_Parent'] = dic['menu_Principal'].copy()
         for campo,valor in dic['menu_Parent'].items():
-            menus_parents = cls.select(cls.menu_parent_nombre).where(cls.menu_root_nombre == campo).order_by(cls.menu_parent_index).distinct()
+            menus_parents = cls.select(cls.menu_parent_nombre).where((cls.menu_root_nombre == campo) & (cls.modelo.in_(usuarioPermisos))).order_by(cls.menu_parent_index).distinct()
             menus_parents =  [menu.menu_parent_nombre for menu in menus_parents]
             dic['menu_Parent'][campo] = {item: None for item in menus_parents}
             for campo_menu, valor_menu in dic['menu_Parent'][campo].items():
-                menus = cls.select(cls.menu_nombre).where(cls.menu_parent_nombre == campo_menu).order_by( cls.menu_index).distinct()
+                menus = cls.select(cls.menu_nombre).where((cls.menu_parent_nombre == campo_menu) & (cls.modelo.in_(usuarioPermisos))).order_by( cls.menu_index).distinct()
                 dic['menu_Parent'][campo][campo_menu] = [menu.menu_nombre for menu in menus]
         return dic
 
@@ -205,7 +212,7 @@ class Modelo(BaseModel):
 class User(BaseModel):
     descripcion = "Usuarios"
     grupo_nombres = ['Información general', 'Información general','Permisos']
-    cant_grupo = 3
+    cant_grupo = 2
     models_Rels = ['UserPermisos']
     accion_Config = {
         'reporte': False,
@@ -366,14 +373,27 @@ class User(BaseModel):
 
     def get_permiso(self,modelo):
         if self.admin:
-            return True
+            return {
+                "lectura": True,
+                "escritura": True,
+                "creacion": True,
+                "eliminacion": True,
+            }
         else:
+            if not isinstance(modelo, type):
+                modelo = modelo.__class__
+            modelo = modelo.__name__
             modelo = Modelo.get(Modelo.modelo == modelo)
             permiso = UserPermisos.get_or_none((UserPermisos.usuario_id == self.id) & (UserPermisos.modelo_id == modelo.id))
-            if permiso is not None:
-                return permiso.lectura
+            if permiso:
+                return dict(permiso.__data__)
             else:
-                return False
+                return {
+                "lectura": False,
+                "escritura": False,
+                "creacion": False,
+                "eliminacion": False,
+            }
 
 class UserPermisos(BaseModel):
     descripcion = "Permisos"
@@ -1233,23 +1253,16 @@ class OrdenVenta(BaseModel):
                 'model_name': model_name
             }
             campo_relacion = cls.obtener_campo_rel(model)
-            registros = model.select().where(getattr(model, campo_relacion)== id).order_by(model.id)
-            dataTupla = []
-            for registro in registros:
-                vals = []
-                vals.append(registro.id)
-                vals.append(registro.ordenventa_id.id)
-                vals.append(registro.producto.nombre)
-                vals.append(registro.cantidad)
-                vals.append(registro.precio_Unitario)
-                vals.append(registro.descuento_Porcentaje)
-                vals.append(registro.descuento_Monto)
-                vals.append(registro.impuesto.nombre)
-                vals.append(registro.impuesto_Monto)
-                vals.append(registro.subtoal)
-                vals.append(registro.total)
-                dataTupla.append(tuple(vals))
-            descp['records'] = dataTupla
+            records = model.select().where(getattr(model, campo_relacion)== id).order_by(model.id)
+            vals = {}
+            for field in model._meta.sorted_fields:
+                if isinstance(field, ForeignKey):
+                    vals[f"{field.help_text}"] = [getattr(record, field.name).nombre for record in records]
+                elif isinstance(field, Boolean):
+                    vals[f"{field.help_text}"] = ["SI" if getattr(record, field.name) else "NO" for record in records]
+                else:
+                    vals[f"{field.help_text}"] = [getattr(record, field.name) for record in records]
+            descp['datos'] = vals
             datos.append(descp)
         return datos
 
@@ -1638,23 +1651,16 @@ class FacturaCliente(BaseModel):
                 'model_name': model_name
             }
             campo_relacion = cls.obtener_campo_rel(model)
-            registros = model.select().where(getattr(model, campo_relacion)== id).order_by(model.id)
-            dataTupla = []
-            for registro in registros:
-                vals = []
-                vals.append(registro.id)
-                vals.append(registro.factura_id.id)
-                vals.append(registro.producto.nombre)
-                vals.append(registro.cantidad)
-                vals.append(registro.precio_Unitario)
-                vals.append(registro.descuento_Porcentaje)
-                vals.append(registro.descuento_Monto)
-                vals.append(registro.impuesto.nombre)
-                vals.append(registro.impuesto_Monto)
-                vals.append(registro.subtoal)
-                vals.append(registro.total)
-                dataTupla.append(tuple(vals))
-            descp['records'] = dataTupla
+            records = model.select().where(getattr(model, campo_relacion)== id).order_by(model.id)
+            vals = {}
+            for field in model._meta.sorted_fields:
+                if isinstance(field, ForeignKey):
+                    vals[f"{field.help_text}"] = [getattr(record, field.name).nombre for record in records]
+                elif isinstance(field, Boolean):
+                    vals[f"{field.help_text}"] = ["SI" if getattr(record, field.name) else "NO" for record in records]
+                else:
+                    vals[f"{field.help_text}"] = [getattr(record, field.name) for record in records]
+            descp['datos'] = vals
             datos.append(descp)
         return datos
 
@@ -2025,23 +2031,16 @@ class OrdenCompra(BaseModel):
                 'model_name': model_name
             }
             campo_relacion = cls.obtener_campo_rel(model)
-            registros = model.select().where(getattr(model, campo_relacion)== id).order_by(model.id)
-            dataTupla = []
-            for registro in registros:
-                vals = []
-                vals.append(registro.id)
-                vals.append(registro.ordencompra_id.id)
-                vals.append(registro.producto.nombre)
-                vals.append(registro.cantidad)
-                vals.append(registro.precio_Unitario)
-                vals.append(registro.descuento_Porcentaje)
-                vals.append(registro.descuento_Monto)
-                vals.append(registro.impuesto.nombre)
-                vals.append(registro.impuesto_Monto)
-                vals.append(registro.subtoal)
-                vals.append(registro.total)
-                dataTupla.append(tuple(vals))
-            descp['records'] = dataTupla
+            records = model.select().where(getattr(model, campo_relacion)== id).order_by(model.id)
+            vals = {}
+            for field in model._meta.sorted_fields:
+                if isinstance(field, ForeignKey):
+                    vals[f"{field.help_text}"] = [getattr(record, field.name).nombre for record in records]
+                elif isinstance(field, Boolean):
+                    vals[f"{field.help_text}"] = ["SI" if getattr(record, field.name) else "NO" for record in records]
+                else:
+                    vals[f"{field.help_text}"] = [getattr(record, field.name) for record in records]
+            descp['datos'] = vals
             datos.append(descp)
         return datos
 
@@ -2418,23 +2417,16 @@ class FacturaProveedor(BaseModel):
                 'model_name': model_name
             }
             campo_relacion = cls.obtener_campo_rel(model)
-            registros = model.select().where(getattr(model, campo_relacion)== id).order_by(model.id)
-            dataTupla = []
-            for registro in registros:
-                vals = []
-                vals.append(registro.id)
-                vals.append(registro.factura_id.id)
-                vals.append(registro.producto.nombre)
-                vals.append(registro.cantidad)
-                vals.append(registro.precio_Unitario)
-                vals.append(registro.descuento_Porcentaje)
-                vals.append(registro.descuento_Monto)
-                vals.append(registro.impuesto.nombre)
-                vals.append(registro.impuesto_Monto)
-                vals.append(registro.subtoal)
-                vals.append(registro.total)
-                dataTupla.append(tuple(vals))
-            descp['records'] = dataTupla
+            records = model.select().where(getattr(model, campo_relacion)== id).order_by(model.id)
+            vals = {}
+            for field in model._meta.sorted_fields:
+                if isinstance(field, ForeignKey):
+                    vals[f"{field.help_text}"] = [getattr(record, field.name).nombre for record in records]
+                elif isinstance(field, Boolean):
+                    vals[f"{field.help_text}"] = ["SI" if getattr(record, field.name) else "NO" for record in records]
+                else:
+                    vals[f"{field.help_text}"] = [getattr(record, field.name) for record in records]
+            descp['datos'] = vals
             datos.append(descp)
         return datos
 
@@ -2737,6 +2729,10 @@ default_user = {
 }
 
 default_Ajuste = [
+    {
+        "key": 'color.menu',
+        "valor": '#555',
+    },
     {
         "key": 'color.fondo',
         "valor": '#F8F9FA',

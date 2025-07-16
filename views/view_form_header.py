@@ -16,6 +16,7 @@ class ViewFormHeader(tk.Frame):
         self.crear_header()
 
     def crear_header(self):
+        permiso = self.master.master.user.get_permiso(self.model)
         self.frame_contenido_header.lower()
         frame_labels = tk.Frame(self.frame_contenido_header, bg=self.ParametroAjuste.color_frame)
         frame_labels.pack(fill=tk.BOTH, pady=10)
@@ -36,14 +37,15 @@ class ViewFormHeader(tk.Frame):
         frame_buttons = tk.Frame(self.frame_contenido_header, bg=self.ParametroAjuste.color_frame)
         frame_buttons.pack(fill=tk.BOTH, pady=10)
 
-        if type(self.model.id) is int:
+        if type(self.model.id) is int and permiso['eliminacion']:
             btn_Eliminar = Crear.crear_btn(self.Crear, text="Eliminar", ajsutes=self.ParametroAjuste)
             btn_Eliminar.pack(side="left", padx=10, in_=frame_buttons)
             btn_Eliminar.config(command=self.eliminar_model)
 
-        btn_Guardar = Crear.crear_btn(self.Crear, text="Guardar", ajsutes=self.ParametroAjuste)
-        btn_Guardar.pack(side="left", padx=10, in_=frame_buttons)
-        btn_Guardar.config(command=self.guardar)
+        if permiso['escritura']:
+            btn_Guardar = Crear.crear_btn(self.Crear, text="Guardar", ajsutes=self.ParametroAjuste)
+            btn_Guardar.pack(side="left", padx=10, in_=frame_buttons)
+            btn_Guardar.config(command=self.guardar)
 
     def ir_back_view(self,event):
         widget = event.widget
@@ -54,7 +56,7 @@ class ViewFormHeader(tk.Frame):
         try:
             self.verificar_fields_required()
             cliente = {}
-            sel = self.frame_contenido
+            sel = self.master.master.frame_contenido
             for attr in sel.__dict__:
                 if attr.endswith("_field"):
                     valor = getattr(sel, attr).get()
@@ -69,7 +71,7 @@ class ViewFormHeader(tk.Frame):
                 del cliente["id"]
             self.model = self.model.crear_actualizar_desde_dict(cliente)
             self.id = self.model.id
-            self.load()
+            self.master.master.load()
         except ValueError as e:
             return
 

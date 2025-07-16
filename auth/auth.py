@@ -20,7 +20,6 @@ def authenticacion_user(email, password):
     try:
         user = User.get(User.email == 'admin')
         if verificar_password('admin', user.password):
-            user.permisos = json.loads(user.permisos)
             return user
         else:
             messagebox.showerror("Error", "¡Contraseña incorrecta!")

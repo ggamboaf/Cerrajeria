@@ -10,7 +10,7 @@ from views.view_form_header import *
 popup = None
 
 class ViewForm(tk.Frame):
-    def __init__(self, master=None,model=None,id=False,ir_action_back=None,navegacion=None,on_click_create_Model=None):
+    def __init__(self, master=None,model=None,id=False,ir_action_back=None,navegacion=None,on_click_create_Model=None,user=None):
         self.ParametroAjuste = ParametroAjuste()
         self.Crear = Crear()
         super().__init__(master, bg=self.ParametroAjuste.color_fondo)
@@ -19,6 +19,7 @@ class ViewForm(tk.Frame):
         self.model = model
         self.labelFrames = []
         self.id = id
+        self.user = user
         self.ir_back = None
         self.ir_action_back = ir_action_back
         self.on_click_create_Model = on_click_create_Model
@@ -48,6 +49,22 @@ class ViewForm(tk.Frame):
             self.navegacion[-1]['model'] = self.model
             self.crear_header()
             self.Crear.crear_form(self.frame_contenido, self.model,load=self.load,on_click_create_Model=self.on_click_create_Model,navegacion=self.navegacion,guardar=self.guardar)
+        self.permiso()
+
+    def permiso(self):
+        permiso = self.user.get_permiso(self.model)
+        if not permiso['escritura']:
+            sel = self.frame_contenido
+            for attr in sel.__dict__:
+                if attr.endswith("_field"):
+                    try:
+                        entry = getattr(sel, attr)
+                        if isinstance(entry, tk.BooleanVar):
+                            entry.boolean.config(state='disabled')
+                        else:
+                            entry.config(state='disabled')
+                    except tk.TclError:
+                        pass
 
     def crear_area_contenido_header(self):
         frame_contenido_header = tk.Frame(self, height=100, bg="white")
