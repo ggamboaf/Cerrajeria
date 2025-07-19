@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+    <subject>Reinicio de contraseña</subject>
+    <body>
+        <![CDATA[
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Bienvenido al Sistema</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: auto;
+        }
+        h2 {
+            color: #2c3e50;
+        }
+        p {
+            color: #34495e;
+        }
+        .credentials {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>¡Bienvenido al Sistema!</h2>
+        <p>Hola <strong>{{usuario.nombre}}</strong>,</p>
+        <p>Tu cuenta ha sido creada exitosamente. A continuación encontrarás tus credenciales de acceso:</p>
+        <div class="credentials">
+            <p><strong>Usuario:</strong> {{usuario.email}}</p>
+            <p><strong>Contraseña:</strong> {{usuario.password}}</p>
+        </div>
+        <p>Por favor, cambia tu contraseña después de iniciar sesión por primera vez.</p>
+        <div class="footer">
+            <p>Este es un mensaje automático. Por favor, no respondas a este correo.</p>
+        </div>
+    </div>
+</body>
+</html>
+        ]]>
+    </body>
+</template>

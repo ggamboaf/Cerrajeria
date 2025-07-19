@@ -25,20 +25,20 @@ class EnviarCorreo:
 
         return cuerpo_html
 
-    # def enviar_correo(self,destinatario, nombre_plantilla, contexto):
-    #     asunto, cuerpo_html = self.renderizar_plantilla_xml(nombre_plantilla,contexto)
-    #
-    #     msg = EmailMessage()
-    #     msg.set_content(cuerpo_html, subtype='html')
-    #     msg["Subject"] = asunto
-    #     msg["From"] = self.ParametroAjuste.smtp_usuario
-    #     msg["To"] = destinatario
-    #
-    #     with smtplib.SMTP_SSL( self.ParametroAjuste.smtp_servidor, int(self.ParametroAjuste.smtp_puerto)) as smtp:
-    #         smtp.login(self.ParametroAjuste.smtp_usuario, self.ParametroAjuste.smtp_contrasena)
-    #         smtp.send_message(msg)
-    #
-    #     return True
+    def enviar_correo(self,model):
+        cuerpo_html = self.renderizar_plantilla_xml(model)
+
+        msg = EmailMessage()
+        msg.set_content(cuerpo_html, subtype='html')
+        msg["Subject"] = "asunto"
+        msg["From"] = self.ParametroAjuste.smtp_usuario
+        msg["To"] = model.email
+
+        with smtplib.SMTP_SSL( self.ParametroAjuste.smtp_servidor, int(self.ParametroAjuste.smtp_puerto)) as smtp:
+            smtp.login(self.ParametroAjuste.smtp_usuario, self.ParametroAjuste.smtp_contrasena)
+            smtp.send_message(msg)
+
+        return True
 
     def enviar_correo_reporte(self,model):
         cuerpo_html = self.renderizar_plantilla_xml(model)
@@ -60,10 +60,3 @@ class EnviarCorreo:
         server.login(self.ParametroAjuste.smtp_usuario, self.ParametroAjuste.smtp_contrasena)
         server.send_message(msg)
         server.quit()
-
-
-        # with smtplib.SMTP_SSL( self.ParametroAjuste.smtp_servidor, int(self.ParametroAjuste.smtp_puerto)) as smtp:
-        #     smtp.login(self.ParametroAjuste.smtp_usuario, self.ParametroAjuste.smtp_contrasena)
-        #     smtp.send_message(msg)
-        #
-        # return True

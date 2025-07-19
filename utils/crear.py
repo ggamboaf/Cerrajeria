@@ -186,6 +186,7 @@ class Crear:
         tipo_var = tk.StringVar()
         entry = ttk.Combobox(marco, textvariable=tipo_var,values=opciones,width=40)
         entry.grid(row=field.posicion,  column=2, padx=10, pady=5, sticky="ew")
+        entry.field_nombre = field.name
         if not field.mostrar_Form:
             entry.grid_remove()
             label.grid_remove()
@@ -227,6 +228,8 @@ class Crear:
         boolean = tk.Checkbutton(marco, variable=boolean_var,bg=self.ParametroAjuste.color_frame)
         boolean.grid(row=field.posicion, column=2, padx=10, pady=5, sticky="ew")
         boolean_var.boolean = boolean
+        boolean.boolean_var = boolean_var
+        boolean_var.field_nombre = field.name
         if not field.mostrar_Form:
             boolean.grid_remove()
             label.grid_remove()
@@ -239,6 +242,7 @@ class Crear:
         label.grid(row=field.posicion, column=1, padx=10, pady=5, sticky="w")
         entry = DateEntry(marco, width=12, background='darkblue',foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
         entry.grid(row=field.posicion, column=2, padx=10, pady=5, sticky="ew")
+        entry.field_nombre = field.name
         if not field.mostrar_Form:
             entry.grid_remove()
             label.grid_remove()
@@ -267,6 +271,7 @@ class Crear:
         entry.listbox = None
         entry.referencia_id = 0
         entry.ochange = field.ochange
+        entry.field_nombre = field.name
         entry.bind("<KeyRelease>", check_input)
         if not field.mostrar_Form:
             entry.grid_remove()
@@ -288,7 +293,7 @@ class Crear:
 
         setattr(frame_contenido, f"{field.name}_field", entry)
 
-    def crear_tab(self,model,frame_contenido,user):
+    def crear_tab(self,model,frame_contenido,user,modal_Agregar):
         datos = model.obtener_datos_models_rel(model.id)
         style = ttk.Style()
         style.theme_use('default')  # Asegúrate de usar un tema que permita personalización
@@ -301,16 +306,16 @@ class Crear:
         for dato in datos:
             tab = tk.Frame(notebook,bg=self.ParametroAjuste.color_frame)
             notebook.add(tab, text=dato['tab_Name'])
-            self.crear_tabla(tab, pd.DataFrame(dato['datos']),dato['model'],dato['model_name'],user)
+            self.crear_tabla(tab, pd.DataFrame(dato['datos']),dato['model'],dato['model_name'],user,modal_Agregar)
 
-    def crear_tabla(self,tab, df,model,model_name,user):
+    def crear_tabla(self,tab, df,model,model_name,user,modal_Agregar):
         button_frame = tk.Frame(tab,bg=self.ParametroAjuste.color_frame)
         button_frame.pack(fill='x')
         permiso = user.get_permiso(model)
         if permiso['creacion']:
             btn_Agregar = self.crear_btn(text="Agregar",ajsutes=self.ParametroAjuste)
             btn_Agregar.pack(anchor='nw', padx=5, pady=5,in_=button_frame)
-            # btn_Agregar.config(command=lambda: self.modal_Agregar(model))
+            btn_Agregar.config(command=lambda: modal_Agregar(model))
 
         style = ttk.Style()
         style.theme_use("clam")

@@ -1,4 +1,4 @@
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 import tkinter as tk
 from models.models import Auto, Boolean, Date
 from utils.ajuste import ParametroAjuste
@@ -9,7 +9,7 @@ from utils.generar_reporte import GenerarReporte
 popup = None
 
 class ViewFormBody(tk.Frame):
-    def __init__(self,master=None,navegacion=None,model=None,user=None,on_click_create_Model=None):
+    def __init__(self,master=None,navegacion=None,model=None,user=None,on_click_create_Model=None,modal_Agregar=None):
         self.frame_contenido_tab = None
         self.marco = None
         self.labelFrames = None
@@ -19,16 +19,34 @@ class ViewFormBody(tk.Frame):
         self.Crear = Crear()
         super().__init__(master, bg=self.ParametroAjuste.color_fondo)
         self.on_click_create_Model = on_click_create_Model
-        self.frame_contenido_body = master
+        self.modal_Agregar = modal_Agregar
+        self.frame_contenido_body = None
         self.model = model
         self.navegacion = navegacion
         self.user = user
         self.crear_body()
 
     def crear_body(self):
-        self.frame_contenido_body.lower()
+        canvas = tk.Canvas(self.master,bg=self.ParametroAjuste.color_frame)
+        scrollbar = ttk.Scrollbar(self.master, orient="vertical", command=canvas.yview)
+        self.frame_contenido_body = tk.Frame(canvas,bg=self.ParametroAjuste.color_frame)
+
+        self.frame_contenido_body.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+
+        canvas.create_window((0, 0), window=self.frame_contenido_body, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
         self.crear_body_header()
         self.crear_body_model_field()
+        self.crear_body_xx()
 
     def crear_body_header(self):
         if self.model.accion_Config['reporte']:
@@ -36,21 +54,34 @@ class ViewFormBody(tk.Frame):
             self.frame_contenido_report.pack(padx=10, pady=10, fill='x')
             if self.model.accion_Config['reporte_Correo']:
                 btn_Enviar_Correo = Crear.crear_btn(self.Crear,text=self.model.accion_Config['reporte_CorreoDescripcion'],
-                                                   contenedor=self.frame_contenido_report, ajsutes=self.ParametroAjuste)
+                                                    contenedor=self.frame_contenido_report, ajsutes=self.ParametroAjuste)
                 btn_Enviar_Correo.pack(side="left", padx=10)
                 btn_Enviar_Correo.config(command=self.enviar_reporte_correo)
 
             if self.model.accion_Config['reporte_Descargar']:
                 btn_Descargar = Crear.crear_btn(self.Crear,text=self.model.accion_Config['reporte_DescargarDescripcion'],
-                                               contenedor=self.frame_contenido_report, ajsutes=self.ParametroAjuste)
+                                                contenedor=self.frame_contenido_report, ajsutes=self.ParametroAjuste)
                 btn_Descargar.pack(side="left", padx=10)
                 btn_Descargar.config(command=self.descargar_reporte)
 
-            if self.model.accion_Config['crear_Modelo']:
-                btn_Crear_Modelo =Crear.crear_btn(self.Crear,text=self.model.accion_Config['crear_Modelo_Descripcion'],
-                                                  contenedor=self.frame_contenido_report, ajsutes=self.ParametroAjuste)
+            if self.model.accion_Config['crear_Modelo'] and not self.model.terminada:
+                btn_Crear_Modelo =Crear.crear_btn(self.Crear,text=self.model.accion_Config['crear_Modelo_Descripcion'],contenedor=self.frame_contenido_report, ajsutes=self.ParametroAjuste)
                 btn_Crear_Modelo.pack(side="left", padx=10)
                 btn_Crear_Modelo.config(command=self._on_click_create_model)
+
+        if 'otras_acciones' in self.model.accion_Config:
+            self.frame_contenido_report = tk.Frame(self.frame_contenido_body, bg=self.ParametroAjuste.color_frame)
+            self.frame_contenido_report.pack(padx=10, pady=10, fill='x')
+            for accion in self.model.accion_Config['otras_acciones']:
+                btn_Crear_Modelo = Crear.crear_btn(self.Crear, text=accion['accion_Nombre'], contenedor=self.frame_contenido_report, ajsutes=self.ParametroAjuste)
+                btn_Crear_Modelo.pack(side="left", padx=10)
+                btn_Crear_Modelo.metodo = accion['metodo']
+                btn_Crear_Modelo.bind("<Button-1>", self.otras_acciones)
+
+    def otras_acciones(self,event):
+        widget = event.widget
+        metodo = getattr(self.model, widget.metodo)
+        metodo()
 
     def enviar_reporte_correo(self):
         return EnviarCorreo.enviar_correo_reporte(EnviarCorreo(),self.model)
@@ -199,4 +230,16 @@ class ViewFormBody(tk.Frame):
         if hasattr(self.model, "models_Rels"):
             self.frame_contenido_tab = tk.Frame(self.frame_contenido_body, bg=self.ParametroAjuste.color_frame)
             self.frame_contenido_tab.pack(padx=10, pady=10, fill='x')
-            self.Crear.crear_tab(self.model,self.frame_contenido_tab,self.user)
+            self.Crear.crear_tab(self.model,self.frame_contenido_tab,self.user,self._modal_Agregar)
+
+    def _modal_Agregar(self,model):
+        if self.modal_Agregar:
+            self.modal_Agregar(model)
+
+    def crear_body_xx(self):
+        # fff = tk.Frame(self.frame_contenido_body, bg=self.ParametroAjuste.color_frame)
+        # fff.pack(padx=10, pady=10, fill='x')
+
+        for a in range(100):
+            label = tk.Label(self.frame_contenido_body, text="Nombre", bg=self.ParametroAjuste.color_frame,font=('Arial', 12, 'bold'))
+            label.pack(side='bottom', fill='both', expand=True)

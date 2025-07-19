@@ -6,12 +6,14 @@ from utils.crear import Crear
 
 
 class ViewFormHeader(tk.Frame):
-    def __init__(self,master=None,navegacion=None,model=None,user=None):
+    def __init__(self,master=None,navegacion=None,model=None,user=None,guardar=None,ir_action_back=None):
         self.ParametroAjuste = ParametroAjuste()
         self.Crear = Crear()
         super().__init__(master, bg=self.ParametroAjuste.color_fondo)
         self.frame_contenido_header = master
         self.navegacion = navegacion
+        self.ir_action_back = ir_action_back
+        self.guardar = guardar
         self.user = user
         self.model = model
         self.crear_header()
@@ -46,53 +48,23 @@ class ViewFormHeader(tk.Frame):
         if permiso['escritura']:
             btn_Guardar = Crear.crear_btn(self.Crear, text="Guardar", ajsutes=self.ParametroAjuste)
             btn_Guardar.pack(side="left", padx=10, in_=frame_buttons)
-            btn_Guardar.config(command=self.guardar)
+            btn_Guardar.config(command=self._guardar)
 
     def ir_back_view(self,event):
         widget = event.widget
         navegacion =  self.navegacion[widget.navegacion_id]
-        navegacion['funcion']([navegacion['model'].id],model=navegacion['model'],navegacion=self.navegacion,nuevo=False,back=True)
+        if navegacion['descripcion'] == 'Menu principal':
+            navegacion['funcion']()
+        else:
+            navegacion['funcion']([navegacion['model'].id],model=navegacion['model'],navegacion=self.navegacion,nuevo=False,back=True)
 
-    def guardar(self):
-        try:
-            self.verificar_fields_required()
-            cliente = {}
-            sel = self.master.master.frame_contenido
-            for attr in sel.__dict__:
-                if attr.endswith("_field"):
-                    valor = getattr(sel, attr).get()
-                    entry = getattr(sel, attr)
-                    key = attr.replace('_field','')
-                    if hasattr(entry,"referencia_id"):
-                        if entry.referencia_id != 0:
-                         cliente[f"{key}"] = entry.referencia_id
-                    else:
-                        cliente[f"{key}"] = valor
-            if cliente['id'] == '':
-                del cliente["id"]
-            self.model = self.model.crear_actualizar_desde_dict(cliente)
-            self.id = self.model.id
-            self.master.master.load()
-        except ValueError as e:
-            return
+    def _guardar(self):
+        if self.guardar:
+            self.guardar()
 
     def eliminar_model(self):
         self.model.eliminar_datos_models_rel(self.model.id)
         model = self.model
         self.model.delete_instance()
         if self.ir_action_back:
-            self.ir_action_back(self.model)
-
-    def verificar_fields_required(self):
-        msg = ""
-        campos_no_nulos = [campo for nombre, campo in self.model._meta.fields.items()if campo.null is False or campo.required]
-        sel = self.frame_contenido_header.master.frame_contenido
-        for field in campos_no_nulos:
-            if not isinstance(field,Auto):
-                entry = getattr(sel, f"{field.name}_field")
-                if entry.get() == "":
-                    msg += f"El campo {field.help_text} es requerido \n"
-
-        if msg != "":
-            messagebox.showerror("Error", msg)
-            raise ValueError("Campo vacío")
+            self.ir_action_back()

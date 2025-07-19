@@ -1,12 +1,14 @@
 import decimal
 import inspect
-import json
+import random
+import string
 import datetime
 
 from babel.numbers import format_currency
 from peewee import *
 from decimal import Decimal
-from utils.utils import encriptar_password, verificar_password
+
+from utils.utils import encriptar_password
 
 
 db = SqliteDatabase('cerrajeria.db')
@@ -217,8 +219,14 @@ class User(BaseModel):
     accion_Config = {
         'reporte': False,
         'crear_Modelo': False,
+        'correo_Template': "envio_credenciales.xml",
+        'otras_acciones':[
+            {
+                'accion_Nombre': 'Enviar credenciales',
+                'metodo': 'enviar_credenciales',
+            }
+        ]
     }
-    auto_Guardar = True
     menu_root_index = 3
     menu_root_nombre = 'Configuración'
     menu_parent_index = 0
@@ -233,16 +241,12 @@ class User(BaseModel):
     admin = Boolean(default=False, help_text="Administrador", mostrar_Tree=True, mostrar_Form=True, numero_Grupo=1,posicion=2, exportar=True)
     password = Char(help_text="Contraseña",mostrar_Tree=False,mostrar_Form=False,numero_Grupo=0,posicion=0,exportar=False)
     codigo = Char(help_text="Código",null=True,mostrar_Tree=False,mostrar_Form=False,numero_Grupo=0,posicion=0,exportar=False)
-    permisos = Text(default='{}', mostrar_Tree=False, mostrar_Form=True,help_text="fff")
+    nuevo = Boolean(default=False, help_text="Nuevo", mostrar_Tree=False, mostrar_Form=False)
 
     @classmethod
     def crear_actualizar_desde_dict(cls, datos):
-        """
-        Crea o actualiza un registro a partir de un diccionario.
-        Convierte automáticamente los valores a sus tipos correctos.
-        """
         campos = cls._meta.fields
-
+        instancia = None
         def convertir_valor(campo, valor):
             tipo = type(campos[campo])
             if tipo == IntegerField:
@@ -272,9 +276,39 @@ class User(BaseModel):
                 return instancia
             except cls.DoesNotExist:
                 datos_convertidos.pop('id')
-                return cls.create(**datos_convertidos)
+                instancia = cls.create(**datos_convertidos)
         else:
-            return cls.create(**datos_convertidos)
+            instancia = cls.create(**datos_convertidos)
+
+        return instancia
+
+    def enviar_credenciales(self):
+        from  utils.enviar_correo import EnviarCorreo
+        self.password = self.generar_contrasena()
+        EnviarCorreo.enviar_correo(EnviarCorreo(), model=self)
+        self.password = encriptar_password(self.password)
+        self.nuevo = True
+        self.save()
+
+    def get_contexto(self):
+        return {
+            'usuario': {
+                'nombre': self.nombre,
+                'email': self.email,
+                'password': self.password,
+            }
+        }
+
+    def cambio_contrasena(self):
+        self.password = encriptar_password(self.password)
+        self.nuevo = False
+        self.save()
+    def generar_contrasena(self):
+        letras = random.choices(string.ascii_letters, k=3)  # Letras aleatorias (mayúsculas y minúsculas)
+        numeros = random.choices(string.digits, k=4)  # Dígitos aleatorios
+        combinacion = letras + numeros
+        random.shuffle(combinacion)  # Mezclar el orden
+        return ''.join(combinacion)
 
     @classmethod
     def obtener_datos_para_treeview(cls):
@@ -353,11 +387,11 @@ class User(BaseModel):
             vals = {}
             for field in model._meta.sorted_fields:
                 if isinstance(field, ForeignKey):
-                    vals[f"{field.help_text}"] = [getattr(record, field.name).nombre for record in records]
+                    vals[f"{field.help_text}"] = [getattr(record, field.name).nombre for record in records] if isinstance(id,int) else []
                 elif isinstance(field, Boolean):
-                    vals[f"{field.help_text}"] = ["SI" if getattr(record, field.name) else "NO" for record in records]
+                    vals[f"{field.help_text}"] = ["SI" if getattr(record, field.name) else "NO" for record in records] if isinstance(id,int) else []
                 else:
-                    vals[f"{field.help_text}"] = [getattr(record, field.name) for record in records]
+                    vals[f"{field.help_text}"] = [getattr(record, field.name) for record in records] if isinstance(id,int) else []
             descp['datos'] = vals
             datos.append(descp)
         return datos
@@ -1106,6 +1140,15 @@ class Producto(BaseModel):
 
         return datos
 
+    @classmethod
+    def obtner_productos_menor(cls,cant):
+        datos = {}
+        productos = cls.select(cls.nombre,cls.existencias).where(cls.existencias < cant)
+        datos['Producto'] = [producto.nombre for producto in productos]
+        datos['Existencias'] = [producto.existencias for producto in productos]
+
+        return datos
+
     def obtener_valor_maximo(self):
         totalOrdenVenta = 0
         totalOrdenCompra = 0
@@ -1257,11 +1300,11 @@ class OrdenVenta(BaseModel):
             vals = {}
             for field in model._meta.sorted_fields:
                 if isinstance(field, ForeignKey):
-                    vals[f"{field.help_text}"] = [getattr(record, field.name).nombre for record in records]
+                    vals[f"{field.help_text}"] = [getattr(record, field.name).nombre for record in records] if isinstance(id,int) else []
                 elif isinstance(field, Boolean):
-                    vals[f"{field.help_text}"] = ["SI" if getattr(record, field.name) else "NO" for record in records]
+                    vals[f"{field.help_text}"] = ["SI" if getattr(record, field.name) else "NO" for record in records] if isinstance(id,int) else []
                 else:
-                    vals[f"{field.help_text}"] = [getattr(record, field.name) for record in records]
+                    vals[f"{field.help_text}"] = [getattr(record, field.name) for record in records] if isinstance(id,int) else []
             descp['datos'] = vals
             datos.append(descp)
         return datos
@@ -1296,6 +1339,19 @@ class OrdenVenta(BaseModel):
         model = cls.get(cls.id == id)
         model.get_totales()
         return model
+
+    @classmethod
+    def obtener_ordenes_sin_factura(cls):
+        datos = {}
+        ordenes_ids = [id for (id,) in cls.select(cls.id).tuples()]
+        ordenesFactura_ids = [id for (id,) in FacturaCliente.select(FacturaCliente.ordenventa_id).tuples()]
+        ids = list(set(ordenes_ids) - set(ordenesFactura_ids))
+        ordenes = cls.select(cls.id,cls.cliente,cls.nombre,cls.fecha).where(cls.id.in_(ids))
+        datos['ID'] = [orden.id for orden in ordenes]
+        datos['Nombre'] = [orden.nombre   for orden in ordenes]
+        datos['Cliente'] = [orden.cliente.nombre if orden.cliente is not None else "N/A" for orden in ordenes]
+        datos['Fecha'] = [orden.fecha for orden in ordenes]
+        return datos
 
     def get_totales(self):
         model = globals()['OrdenVentaLine']
@@ -1348,7 +1404,7 @@ class OrdenVenta(BaseModel):
             factura_id = FacturaCliente.crear_actualizar_desde_dict(datos_dict)
             datos_modelrel = self.obtener_datos_models_rel(self.id)
             for dato_modelrel in datos_modelrel:
-                ids = [item[0] for item in dato_modelrel['records']]
+                ids = dato_modelrel['datos']['ID']
                 records = OrdenVentaLine.select().where(OrdenVentaLine.id.in_(ids))
                 for record in records:
                     record_dict = record.__data__.copy()
@@ -1356,6 +1412,8 @@ class OrdenVenta(BaseModel):
                     del record_dict['ordenventa_id']
                     record_dict['factura_id'] = factura_id.id
                     FacturaClienteLine.crear_actualizar_desde_dict(record_dict)
+        self.terminada = True
+        self.save()
         return factura_id
 
 class OrdenVentaLine(BaseModel):
@@ -1655,11 +1713,11 @@ class FacturaCliente(BaseModel):
             vals = {}
             for field in model._meta.sorted_fields:
                 if isinstance(field, ForeignKey):
-                    vals[f"{field.help_text}"] = [getattr(record, field.name).nombre for record in records]
+                    vals[f"{field.help_text}"] = [getattr(record, field.name).nombre for record in records] if isinstance(id,int) else []
                 elif isinstance(field, Boolean):
-                    vals[f"{field.help_text}"] = ["SI" if getattr(record, field.name) else "NO" for record in records]
+                    vals[f"{field.help_text}"] = ["SI" if getattr(record, field.name) else "NO" for record in records] if isinstance(id,int) else []
                 else:
-                    vals[f"{field.help_text}"] = [getattr(record, field.name) for record in records]
+                    vals[f"{field.help_text}"] = [getattr(record, field.name) for record in records] if isinstance(id,int) else []
             descp['datos'] = vals
             datos.append(descp)
         return datos
@@ -2035,11 +2093,11 @@ class OrdenCompra(BaseModel):
             vals = {}
             for field in model._meta.sorted_fields:
                 if isinstance(field, ForeignKey):
-                    vals[f"{field.help_text}"] = [getattr(record, field.name).nombre for record in records]
+                    vals[f"{field.help_text}"] = [getattr(record, field.name).nombre for record in records] if isinstance(id,int) else []
                 elif isinstance(field, Boolean):
-                    vals[f"{field.help_text}"] = ["SI" if getattr(record, field.name) else "NO" for record in records]
+                    vals[f"{field.help_text}"] = ["SI" if getattr(record, field.name) else "NO" for record in records] if isinstance(id,int) else []
                 else:
-                    vals[f"{field.help_text}"] = [getattr(record, field.name) for record in records]
+                    vals[f"{field.help_text}"] = [getattr(record, field.name) for record in records] if isinstance(id,int) else []
             descp['datos'] = vals
             datos.append(descp)
         return datos
@@ -2074,6 +2132,19 @@ class OrdenCompra(BaseModel):
         model = cls.get(cls.id == id)
         model.get_totales()
         return model
+
+    @classmethod
+    def obtener_ordenes_sin_factura(cls):
+        datos = {}
+        ordenes_ids = [id for (id,) in cls.select(cls.id).tuples()]
+        ordenesFactura_ids = [id for (id,) in FacturaProveedor.select(FacturaProveedor.ordencompra_id).tuples()]
+        ids = list(set(ordenes_ids) - set(ordenesFactura_ids))
+        ordenes = cls.select(cls.id,cls.proveedor,cls.nombre,cls.fecha).where(cls.id.in_(ids))
+        datos['ID'] = [orden.id for orden in ordenes]
+        datos['Nombre'] = [orden.nombre   for orden in ordenes]
+        datos['Proveedor'] = [orden.proveedor.nombre if orden.proveedor is not None else "N/A" for orden in ordenes]
+        datos['Fecha'] = [orden.fecha for orden in ordenes]
+        return datos
 
     def get_totales(self):
         model = globals()['OrdenCompraLine']
@@ -2421,16 +2492,17 @@ class FacturaProveedor(BaseModel):
             vals = {}
             for field in model._meta.sorted_fields:
                 if isinstance(field, ForeignKey):
-                    vals[f"{field.help_text}"] = [getattr(record, field.name).nombre for record in records]
+                    vals[f"{field.help_text}"] = [getattr(record, field.name).nombre for record in records] if isinstance(id,int) else []
                 elif isinstance(field, Boolean):
-                    vals[f"{field.help_text}"] = ["SI" if getattr(record, field.name) else "NO" for record in records]
+                    vals[f"{field.help_text}"] = ["SI" if getattr(record, field.name) else "NO" for record in records] if isinstance(id,int) else []
                 else:
-                    vals[f"{field.help_text}"] = [getattr(record, field.name) for record in records]
+                    vals[f"{field.help_text}"] = [getattr(record, field.name) for record in records] if isinstance(id,int) else []
             descp['datos'] = vals
             datos.append(descp)
         return datos
 
     @classmethod
+
     def eliminar_datos_models_rel(cls,id):
         datos = []
         for model_name in cls.models_Rels:
@@ -2725,7 +2797,7 @@ default_user = {
     "cedula": "00000000",
     "puesto": "Gerente",
     "password": encriptar_password("admin"),
-    "permisos": json.dumps({"admin": True})
+    "admin": True
 }
 
 default_Ajuste = [

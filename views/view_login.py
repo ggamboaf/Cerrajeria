@@ -110,10 +110,12 @@ class ViewLogin:
     def verificar_User(self):
         email = self.correo_Entry.get()
         password = self.password_Entry.get()
-        user = authenticacion_user(email, password)
-        if user:
+        self.usuario = authenticacion_user(email, password)
+        if not  self.usuario.nuevo:
             self.master.destroy()
-            self.on_success(user)
+            self.on_success( self.usuario)
+        else:
+            self.nuevo(password)
 
     def envio_Codigo(self):
         self.clear_canvas()
@@ -237,6 +239,46 @@ class ViewLogin:
         self.btn_Restablecer = btn_Restablecer
         self.login_frame = login_frame
 
+    def nuevo(self,password):
+        self.clear_canvas()
+        screen_width = self.master.winfo_screenwidth()
+        screen_height = self.master.winfo_screenheight()
+
+        self.canvas = tk.Canvas(self.master, width=screen_width, height=screen_height, bg=self.ParametroAjuste.color_fondo)
+        self.canvas.pack(fill="both", expand=True)
+
+        frame_width = min(400, screen_width // 3)
+        frame_height = min(260, screen_height // 4)
+        frame_x = (screen_width - frame_width) // 2
+        frame_y = (screen_height - frame_height) // 2
+
+        login_frame = tk.Frame(self.canvas, bg=self.ParametroAjuste.color_frame, bd=2, relief="groove")
+        self.canvas.create_window(frame_x, frame_y, window=login_frame, anchor="nw", width=frame_width, height=frame_height)
+
+        for i in range(8):
+            login_frame.rowconfigure(i, weight=1)
+        login_frame.columnconfigure(0, weight=1)
+        login_frame.columnconfigure(1, weight=4)
+
+        # Contraseña (oculta inicialmente)
+        self.password_Label = tk.Label(login_frame, text="Contraseña", bg=self.ParametroAjuste.color_frame, font=('TkTextFont', 13, 'bold'), fg='#4f4e4d')
+        self.password_Label.grid(row=2, column=0, columnspan=2, sticky="ew", padx=20, pady=(10, 0)
+                                 )
+        self.password_Entry =  ttk.Entry(login_frame, font=('Arial', 12, 'bold'))
+        self.password_Entry.grid(row=3, column=1, sticky="ew", padx=(0, 40), pady=(2, 0))
+        try:
+            password_icon_img = Image.open("assets/images/password_icon.png")
+            password_icon_photo = ImageTk.PhotoImage(password_icon_img)
+        except Exception:
+            password_icon_photo = None
+        self.password_icon = tk.Label(login_frame, image=password_icon_photo, bg=self.ParametroAjuste.color_frame)
+        self.password_icon.image = password_icon_photo
+        self.password_icon.grid(row=3, column=0, sticky="e", padx=(10, 0))
+
+        btn_Restablecer = self.Crear.crear_btn(text="Restablecer contraseña", ajsutes=self.ParametroAjuste)
+        btn_Restablecer.grid(row=6, column=0, columnspan=2, sticky="ew", padx=20, pady=(10, 5), in_=login_frame)
+        btn_Restablecer.config(command=self.cambio_contrasena)
+
     def vrificar_Codigo(self, btn_Verificar, btn_Restablecer):
         try:
             self.usuario = User.get(User.codigo == self.codigo_Entry.get())
@@ -256,3 +298,10 @@ class ViewLogin:
         restablecer_user(codigo, password)
         self.master.destroy()
         self.on_reset()
+
+    def cambio_contrasena(self):
+        self.usuario.password = self.password_Entry.get()
+        self.usuario.cambio_contrasena()
+        if not self.usuario.nuevo:
+            self.master.destroy()
+            self.on_success(self.usuario)

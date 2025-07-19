@@ -1,23 +1,37 @@
-# Frame superior
-self.frame_contenido_report = tk.Frame(self.frame_contenido_body, bg=self.ParametroAjuste.color_frame)
-self.frame_contenido_report.pack(padx=10, pady=10, fill='x')
+import tkinter as tk
+from tkinter import ttk
 
-# Frame intermedio para la cuadrícula 2x2
-frame_cuadricula = tk.Frame(self.frame_contenido_body, bg="white")
-frame_cuadricula.pack(padx=10, pady=10, fill='both', expand=True)
+class ScrollableFrame(ttk.Frame):
+    def __init__(self, container, *args, **kwargs):
+        super().__init__(container, *args, **kwargs)
 
-# Configurar la cuadrícula 2x2
-for i in range(2):
-    frame_cuadricula.grid_rowconfigure(i, weight=1)
-    frame_cuadricula.grid_columnconfigure(i, weight=1)
+        canvas = tk.Canvas(self)
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        self.scrollable_frame = ttk.Frame(canvas)
 
-# Crear los 4 LabelFrames
-for row in range(2):
-    for col in range(2):
-        lf = ttk.LabelFrame(frame_cuadricula, text=f"Sección {row*2 + col + 1}", padding=10)
-        lf.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
-        ttk.Label(lf, text=f"Contenido {row*2 + col + 1}").pack()
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
 
-# Frame inferior (si lo tienes)
-self.frame_contenido_footer = tk.Frame(self.frame_contenido_body, bg=self.ParametroAjuste.color_frame)
-self.frame_contenido_footer.pack(padx=10, pady=10, fill='x')
+        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+
+# Ejemplo de uso
+root = tk.Tk()
+root.title("Frame con Scroll Vertical")
+
+scroll_frame = ScrollableFrame(root)
+scroll_frame.pack(fill="both", expand=True)
+
+# Agregar muchos widgets para probar el scroll
+for i in range(50):
+    ttk.Label(scroll_frame.scrollable_frame, text=f"Etiqueta {i+1}").pack()
+
+root.mainloop()

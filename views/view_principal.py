@@ -32,7 +32,6 @@ class ViewPrincipal:
         self.fecha_fin = None
         self.fecha_inicio = None
         self.user = user
-        self.permisos = json.loads(json.dumps(self.user.permisos))
         self.root = root
         self.root.state('zoomed')
         self.root.title("Ventana Principal")
@@ -135,13 +134,22 @@ class ViewPrincipal:
             self.iconos[clave] = tk.PhotoImage(file=valor)
 
         self.menu_vertical_frame = tk.Frame(self.root, bg=self.ParametroAjuste.color_menu, bd=1, relief="flat")
+        self.iconos['MenuPrincipal'] = tk.PhotoImage(file='assets/icon/MenuPrincipal.png')
+        btn = tk.Button(
+            self.menu_vertical_frame, text="Menu principal",image=self.iconos['MenuPrincipal'], compound="left",
+            font=("Helvetica", 12), fg="white", bg=self.ParametroAjuste.color_menu, relief="flat", anchor="w",
+            command=self.regresar_MenuPrincipal
+        )
+        btn.pack(fill="x", padx=10, pady=5)
+
         for texto in self.iconos:
-            btn = tk.Button(
-                self.menu_vertical_frame, text=texto, image=self.iconos[texto], compound="left",
-                font=("Helvetica", 12), fg="white", bg=self.ParametroAjuste.color_menu, relief="flat", anchor="w",
-                command=lambda t=texto: self.mostrar_menu_horizontal(t)
-            )
-            btn.pack(fill="x", padx=10, pady=5)
+            if texto != 'MenuPrincipal':
+                btn = tk.Button(
+                    self.menu_vertical_frame, text=texto, image=self.iconos[texto], compound="left",
+                    font=("Helvetica", 12), fg="white", bg=self.ParametroAjuste.color_menu, relief="flat", anchor="w",
+                    command=lambda t=texto: self.mostrar_menu_horizontal(t)
+                )
+                btn.pack(fill="x", padx=10, pady=5)
         # Evento global para ocultar submenús
         self.root.bind("<Button-1>", self.ocultar_todos_los_submenus)
 
@@ -182,7 +190,7 @@ class ViewPrincipal:
         })
         else:
             del navegacion[-1]
-        vista = ViewForm(self.frame_contenido,id=valores[0],model= self.model,ir_action_back=self.mostrar_vista_tree,navegacion=navegacion,on_click_create_Model=self.mostrar_vista_form,user=self.user)
+        vista = ViewForm(self.frame_contenido,id=valores[0],model= self.model,ir_action_back=self.mostrar_vista_tree,ir_action_back_delete_model=self.mostrar_vista_form,navegacion=navegacion,on_click_create_Model=self.mostrar_vista_form,user=self.user)
         vista.pack(fill=tk.BOTH, expand=True)
 
     def crear_vista_form(self,navegacion):
@@ -208,7 +216,6 @@ class ViewPrincipal:
         for index, (nombre_menu, opciones) in enumerate(self.modelos_list[0].items()):
             for opcion in opciones:
                 submenu_root = tk.Menu(self.root,font=fuente_menu)
-                # submenu_root.menu_id = index
 
                 menu_Principal.add_command(label=opcion, command=lambda opt=submenu_root: self.mostrar_MenuParent(opt))
                 self.subMenu.append(menu_Principal)
@@ -235,7 +242,6 @@ class ViewPrincipal:
     def regresar_MenuPrincipal(self):
         self.limpiar_crear_contenido()
         # self.crear_Dashboard()
-        self.root.config(menu=self.menu_Principal)
 
     def dummy_action(self):
         self.label.config(text="Funcionalidad en desarrollo...")
@@ -260,38 +266,47 @@ class ViewPrincipal:
         btn_aplicar = ttk.Button(frame_superior, text="Aplicar", command=self.aplicar_filtro)
         btn_aplicar.pack(side=tk.LEFT)
 
-        x = np.arange(1, 6)
-        y = np.random.randint(1, 10, size=5)
-        categorias = ['A', 'B', 'C', 'D', 'E']
-        valores_pastel = [20, 30, 25, 15, 10]
-        colores = ['red', 'green', 'blue', 'orange', 'purple']
+        contenedor = tk.Frame(self.frame_contenido, bg=self.ParametroAjuste.color_fondo)
+        contenedor.pack(fill="both", expand=True, padx=10, pady=10)
 
-        fig, axs = plt.subplots(2, 2, figsize=(10, 6))
+        contenedor.columnconfigure(0, weight=1)
+        contenedor.columnconfigure(1, weight=1)
 
-        # Gráfico de línea
-        axs[0, 0].plot(x, y, marker='o', linestyle='-', color='blue')
-        axs[0, 0].set_title("Gráfico de Línea")
+        frame_izquierda = tk.Frame(contenedor, bg=self.ParametroAjuste.color_frame)
+        frame_izquierda.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
-        # Gráfico de barras
-        axs[0, 1].bar(categorias, y, color='green')
-        axs[0, 1].set_title("Gráfico de Barras")
+        fig1 = plt.Figure(figsize=(2, 1), dpi=100)
+        ax1 = fig1.add_subplot(111)
+        ax1.plot([1, 2, 3], [1, 4, 9])
+        ax1.set_title("Gráfico 1")
+        canvas1 = FigureCanvasTkAgg(fig1, master=frame_izquierda)
+        canvas1.draw()
+        canvas1.get_tk_widget().pack(padx=10, pady=10, fill="both", expand=True)
 
-        # Gráfico de pastel
-        axs[1, 0].pie(valores_pastel, labels=categorias, colors=colores, autopct='%1.1f%%')
-        axs[1, 0].set_title("Gráfico de Pastel")
+        fig2 = plt.Figure(figsize=(2, 1), dpi=100)
+        ax2 = fig2.add_subplot(111)
+        ax2.bar([1, 2, 3], [3, 5, 2])
+        ax2.set_title("Gráfico 2")
+        canvas2 = FigureCanvasTkAgg(fig2, master=frame_izquierda)
+        canvas2.draw()
+        canvas2.get_tk_widget().pack(padx=10, pady=10, fill="both", expand=True)
 
-        # Gráfico de dispersión
-        axs[1, 1].scatter(x, y, color='purple')
-        axs[1, 1].set_title("Gráfico de Dispersión")
+        fig2 = plt.Figure(figsize=(2, 1), dpi=100)
+        ax2 = fig2.add_subplot(111)
+        ax2.bar([1, 2, 3], [3, 5, 2])
+        ax2.set_title("Gráfico 2")
+        canvas2 = FigureCanvasTkAgg(fig2, master=frame_izquierda)
+        canvas2.draw()
+        canvas2.get_tk_widget().pack(padx=10, pady=10, fill="both", expand=True)
 
-        plt.tight_layout()
 
-        frame_graficos = ttk.Frame(self.frame_contenido)
-        frame_graficos.pack(fill=tk.BOTH, expand=True)
+        # Lado derecho: tablas
+        frame_derecha = tk.Frame(contenedor, bg=self.ParametroAjuste.color_frame)
+        frame_derecha.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
 
-        canvas = FigureCanvasTkAgg(fig, master=frame_graficos)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True)
+        self.tabala_productos(frame_derecha)
+        self.tabala_orden_venta(frame_derecha)
+        self.tabala_orden_compra(frame_derecha)
 
     def mostrar_grafico_ampliado(self,titulo, productos, ventas):
         ventana_grafico = tk.Toplevel()
@@ -321,4 +336,138 @@ class ViewPrincipal:
     def mantener_frente(self):
         self.menu_vertical.lift()
         self.root.after(100, self.mantener_frente)
+
+    def tabala_productos(self, frame_derecha):
+        frame_superior = ttk.Frame(frame_derecha)
+        frame_superior.pack(side=tk.TOP, fill=tk.X)
+
+        ttk.Label(frame_superior, text="Existencias de productos menores a").pack(side=tk.LEFT, padx=(0, 5))
+        self.entry_filtro = ttk.Entry(frame_superior,width=50, font=('Arial', 12, 'bold'))
+        self.entry_filtro.insert(0,5)
+        self.entry_filtro.pack(side=tk.LEFT, padx=(0, 15))
+
+        frame_tabla = tk.Frame(frame_derecha, bd=2, relief="groove")
+        frame_tabla.pack(padx=10, pady=10, fill="both", expand=True)
+
+        btn_aplicar = ttk.Button(frame_superior, text="Aplicar")
+        btn_aplicar.config(command=lambda fr=frame_tabla:self.acccion_tabla_productos(fr))
+        btn_aplicar.pack(side=tk.LEFT)
+
+        self.acccion_tabla_productos(frame_tabla)
+
+    def acccion_tabla_productos(self,frame_tabla):
+        for widget  in frame_tabla.winfo_children():
+            widget .destroy()
+        datos = Producto.obtner_productos_menor(float(self.entry_filtro.get()))
+        df = pd.DataFrame(datos)
+
+        tree = ttk.Treeview(frame_tabla, style="Custom.Treeview", columns=list(df.columns), show="headings")
+
+        vertical = ttk.Scrollbar(frame_tabla, orient="vertical", command=tree.yview)
+        vertical.pack(side=tk.RIGHT, fill=tk.Y)
+        tree.configure(yscrollcommand=vertical.set)
+
+        horizontal = ttk.Scrollbar(frame_tabla, orient="horizontal", command=tree.xview)
+        horizontal.pack(side=tk.BOTTOM, fill=tk.X)
+        tree.configure(xscrollcommand=horizontal.set)
+
+        for columna in df.columns:
+            tree.heading(columna, text=columna)
+            tree.column(columna, width=200, anchor="center")
+
+        for _, row in df.iterrows():
+            tree.insert("", "end" ,values=list(row))
+
+        tree.pack(fill="both", expand=True)
+
+    def tabala_orden_venta(self, frame_derecha):
+        frame_superior = ttk.Frame(frame_derecha)
+        frame_superior.pack(side=tk.TOP, fill=tk.X)
+
+        ttk.Label(frame_superior, text="Ordenes de venta sin factura").pack(side=tk.LEFT, padx=(0, 5))
+
+        frame_tabla = tk.Frame(frame_derecha, bd=2, relief="groove")
+        frame_tabla.pack(padx=10, pady=10, fill="both", expand=True)
+
+        datos = OrdenVenta.obtener_ordenes_sin_factura()
+        df = pd.DataFrame(datos)
+
+        tree = ttk.Treeview(frame_tabla, style="Custom.Treeview", columns=list(df.columns), show="headings")
+
+        vertical = ttk.Scrollbar(frame_tabla, orient="vertical", command=tree.yview)
+        vertical.pack(side=tk.RIGHT, fill=tk.Y)
+        tree.configure(yscrollcommand=vertical.set)
+
+        horizontal = ttk.Scrollbar(frame_tabla, orient="horizontal", command=tree.xview)
+        horizontal.pack(side=tk.BOTTOM, fill=tk.X)
+        tree.configure(xscrollcommand=horizontal.set)
+
+        for columna in df.columns:
+            tree.heading(columna, text=columna)
+            if columna == 'ID':
+                tree.column(columna, width=0, stretch=False)
+            else:
+                tree.column(columna, width=200, anchor="center")
+
+        for _, row in df.iterrows():
+            tree.insert("", "end" ,iid=row['ID'],values=list(row))
+
+        tree.pack(fill="both", expand=True)
+        tree.bind("<<TreeviewSelect>>", self._on_select_orden_venta)
+
+    def _on_select_orden_venta(self,event):
+        widget = event.widget
+        selected_item = widget.focus()
+        navegacion = [{
+            'funcion': self.regresar_MenuPrincipal,
+            'descripcion': "Menu principal",
+            'model': self.model,
+        }]
+        self.mostrar_vista_form(valores=[int(selected_item)],model=OrdenVenta,nuevo=False,navegacion=navegacion)
+
+    def tabala_orden_compra(self, frame_derecha):
+        frame_superior = ttk.Frame(frame_derecha)
+        frame_superior.pack(side=tk.TOP, fill=tk.X)
+
+        ttk.Label(frame_superior, text="Ordenes de compra sin factura").pack(side=tk.LEFT, padx=(0, 5))
+
+        frame_tabla = tk.Frame(frame_derecha, bd=2, relief="groove")
+        frame_tabla.pack(padx=10, pady=10, fill="both", expand=True)
+
+        datos = OrdenCompra.obtener_ordenes_sin_factura()
+        df = pd.DataFrame(datos)
+
+        tree = ttk.Treeview(frame_tabla, style="Custom.Treeview", columns=list(df.columns), show="headings")
+
+        vertical = ttk.Scrollbar(frame_tabla, orient="vertical", command=tree.yview)
+        vertical.pack(side=tk.RIGHT, fill=tk.Y)
+        tree.configure(yscrollcommand=vertical.set)
+
+        horizontal = ttk.Scrollbar(frame_tabla, orient="horizontal", command=tree.xview)
+        horizontal.pack(side=tk.BOTTOM, fill=tk.X)
+        tree.configure(xscrollcommand=horizontal.set)
+
+        for columna in df.columns:
+            tree.heading(columna, text=columna)
+            if columna == 'ID':
+                tree.column(columna, width=0, stretch=False)
+            else:
+                tree.column(columna, width=200, anchor="center")
+
+        for _, row in df.iterrows():
+            tree.insert("", "end" ,iid=row['ID'],values=list(row))
+
+        tree.pack(fill="both", expand=True)
+        tree.bind("<<TreeviewSelect>>", self._on_select_orden_compra)
+
+    def _on_select_orden_compra(self,event):
+        widget = event.widget
+        selected_item = widget.focus()
+        navegacion = [{
+            'funcion': self.regresar_MenuPrincipal,
+            'descripcion': "Menu principal",
+            'model': self.model,
+        }]
+        self.mostrar_vista_form(valores=[int(selected_item)],model=OrdenVenta,nuevo=False,navegacion=navegacion)
+
 

@@ -7,8 +7,6 @@ from peewee import IntegrityError
 
 
 def registar_user(email, nombre,cedula, password):
-    if permisos is None:
-        permisos = {}
     hashed_password = encriptar_password(password)
     try:
         User.create(email=email, nombre=nombre,cedula=cedula, password=hashed_password)
