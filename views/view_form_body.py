@@ -46,7 +46,6 @@ class ViewFormBody(tk.Frame):
 
         self.crear_body_header()
         self.crear_body_model_field()
-        self.crear_body_xx()
 
     def crear_body_header(self):
         if self.model.accion_Config['reporte']:
@@ -235,11 +234,3 @@ class ViewFormBody(tk.Frame):
     def _modal_Agregar(self,model):
         if self.modal_Agregar:
             self.modal_Agregar(model)
-
-    def crear_body_xx(self):
-        # fff = tk.Frame(self.frame_contenido_body, bg=self.ParametroAjuste.color_frame)
-        # fff.pack(padx=10, pady=10, fill='x')
-
-        for a in range(100):
-            label = tk.Label(self.frame_contenido_body, text="Nombre", bg=self.ParametroAjuste.color_frame,font=('Arial', 12, 'bold'))
-            label.pack(side='bottom', fill='both', expand=True)

@@ -157,7 +157,7 @@ class ViewForm(tk.Frame):
                 entries_encontrados.append(widget)
             elif isinstance(widget, tk.Checkbutton):
                 entries_encontrados.append(widget.boolean_var)
-            elif isinstance(widget, tk.Frame) or isinstance(widget, tk.LabelFrame) or isinstance(widget, ttk.LabelFrame):
+            elif isinstance(widget, tk.Frame) or isinstance(widget, tk.LabelFrame) or isinstance(widget, ttk.LabelFrame) or isinstance(widget, tk.Canvas):
                 # Si el widget es un Frame o LabelFrame, llamamos a la función recursivamente
                 entries_encontrados.extend(self.obtener_entries_en_frame(widget))
         return entries_encontrados

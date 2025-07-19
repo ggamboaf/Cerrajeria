@@ -8,7 +8,9 @@
       <w>descripcion</w>
       <w>direccion</w>
       <w>eliminacion</w>
+      <w>metodo</w>
       <w>navegacion</w>
+      <w>obtner</w>
       <w>telfono</w>
       <w>wkhtmltox</w>
     </words>

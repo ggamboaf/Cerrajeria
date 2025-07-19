@@ -1,3 +1,4 @@
+import calendar
 import decimal
 import inspect
 import random
@@ -6,8 +7,9 @@ import datetime
 
 from babel.numbers import format_currency
 from peewee import *
+from peewee import fn
 from decimal import Decimal
-
+import pandas as pd
 from utils.utils import encriptar_password
 
 
@@ -210,6 +212,20 @@ class Modelo(BaseModel):
         models = cls.select(cls.modelo).where(cls.menu_nombre == menu).distinct()
         for model in models:
             return globals()[model.modelo]
+
+    @classmethod
+    def obtener_modelo_nombre(cls,modelo):
+        return globals()[modelo]
+
+
+    @classmethod
+    def obtener_dashboard(cls):
+        modelos = [
+            modelo_clase.dashboard for m in cls.select(cls.modelo).distinct()
+            if (modelo_clase := globals().get(m.modelo)) and isinstance(getattr(modelo_clase, 'dashboard', None),dict)
+        ]
+        return sorted(modelos, key=lambda x: x["index"])
+
 
 class User(BaseModel):
     descripcion = "Usuarios"
@@ -423,11 +439,11 @@ class User(BaseModel):
                 return dict(permiso.__data__)
             else:
                 return {
-                "lectura": False,
-                "escritura": False,
-                "creacion": False,
-                "eliminacion": False,
-            }
+                    "lectura": False,
+                    "escritura": False,
+                    "creacion": False,
+                    "eliminacion": False,
+                }
 
 class UserPermisos(BaseModel):
     descripcion = "Permisos"
@@ -1016,6 +1032,52 @@ class Producto(BaseModel):
     descripcion = "Producto"
     grupo_nombres = ['Información general','Información financiera']
     cant_grupo = 2
+    dashboard = {
+        'index': 0,
+        'index_nombre': 'Productos',
+        'modelo': 'Producto',
+        'tipo': [
+            {
+                'titulo': 'Existencias de productos',
+                'filtro': True,
+                'filtro_conf': {
+                    'tipo': 'valor_unico',
+                    'entrada': 'entry',
+                    'valores_defecto': 'obtener_productos_menor_valor',
+                    'tipo_valor': float,
+                    'textos': ['Productos menores a'],
+                },
+                'grafico':False,
+                'grafico_conf': {},
+                'tabla':True,
+                'tabla_conf': {
+                    'metodo': 'obtener_productos_menor',
+                    'redirige': True,
+                },
+            },
+            {
+                'titulo': 'Venta de productos',
+                'filtro': True,
+                'filtro_conf': {
+                    'tipo': 'rango',
+                    'entrada': 'date',
+                    'valores_defecto': 'obtener_venta_valor',
+                    'tipo_valor': datetime.date,
+                    'textos': ['Desde', 'Hasta'],
+                },
+                'grafico': True,
+                'grafico_conf': {
+                    'tipo': 'barn',
+                    'metodo': 'obtener_venta_grafico'
+                },
+                'tabla': True,
+                'tabla_conf': {
+                    'metodo': 'obtener_venta_tabla',
+                    'redirige': True,
+                },
+            }
+        ]
+    }
     tipo_choices = (
         ('Producto', 'Producto'),
         ('Servicio', 'Servicio'),
@@ -1141,13 +1203,89 @@ class Producto(BaseModel):
         return datos
 
     @classmethod
-    def obtner_productos_menor(cls,cant):
+    def obtener_productos_menor_valor(cls):
+        return [5]
+
+    @classmethod
+    def obtener_venta_valor(cls):
+        return [False,False]
+
+    @classmethod
+    def obtener_productos_menor(cls,valores_defecto=False):
+        if not valores_defecto:
+            valores_defecto = 5
         datos = {}
-        productos = cls.select(cls.nombre,cls.existencias).where(cls.existencias < cant)
+        productos = cls.select(cls.id,cls.nombre,cls.existencias).where(cls.existencias < valores_defecto)
+        datos['MODEL'] = ['Producto' for producto in productos]
+        datos['ID'] = [producto.id for producto in productos]
         datos['Producto'] = [producto.nombre for producto in productos]
         datos['Existencias'] = [producto.existencias for producto in productos]
 
         return datos
+
+    @classmethod
+    def obtener_venta_tabla(cls,desde=False,hasta=False):
+        datos = {}
+        if desde and hasta:
+            query = (FacturaClienteLine
+                     .select(Producto.id.alias('ID'),Producto.nombre.alias('Producto'), fn.SUM(FacturaClienteLine.cantidad).alias('Total'))
+                     .join(Producto)
+                     .switch(FacturaClienteLine)
+                     .join(FacturaCliente)
+                     .where(FacturaCliente.fecha.between(desde, hasta))
+                     .group_by(FacturaClienteLine.producto))
+        else:
+            query = (FacturaClienteLine
+                     .select(Producto.id.alias('ID'),Producto.nombre.alias('Producto'), fn.SUM(FacturaClienteLine.cantidad).alias('Total'))
+                     .join(Producto)
+                     .group_by(FacturaClienteLine.producto))
+
+        if query.count() > 0:
+            lista_productos = list(query.dicts())
+            datos['MODEL'] = ['Producto' for producto in lista_productos]
+            datos['ID'] = [producto["ID"] for producto in lista_productos]
+            datos['Producto'] = [producto["Producto"] for producto in lista_productos]
+            datos['Total'] = [producto["Total"] for producto in lista_productos]
+            df = pd.DataFrame(datos)
+            df_ordenado = df.sort_values(by='Total', ascending=False).reset_index(drop=True)
+            percentil_33 = df_ordenado['Total'].quantile(0.33)
+            percentil_66 = df_ordenado['Total'].quantile(0.66)
+
+            def clasificar(cantidad):
+                if cantidad >= percentil_66:
+                    return 'Más vendidos'
+                elif cantidad >= percentil_33:
+                    return 'Ventas medias'
+                else:
+                    return 'Menos vendidos'
+
+            df_ordenado['Clasificación'] = df_ordenado['Total'].apply(clasificar)
+            return df_ordenado
+        else:
+            return {}
+
+    @classmethod
+    def obtener_venta_grafico(cls,desde=False,hasta=False):
+        if desde and hasta:
+            query = (FacturaClienteLine
+                     .select(Producto.nombre.alias('Producto'), fn.SUM(FacturaClienteLine.cantidad).alias('Total'))
+                     .join(Producto)
+                     .switch(FacturaClienteLine)
+                     .join(FacturaCliente)
+                     .where(FacturaCliente.fecha.between(desde, hasta))
+                     .group_by(FacturaClienteLine.producto))
+        else:
+            query = (FacturaClienteLine
+                     .select(Producto.nombre.alias('Producto'), fn.SUM(FacturaClienteLine.cantidad).alias('Total'))
+                     .join(Producto)
+                     .group_by(FacturaClienteLine.producto))
+        if query.count() > 0:
+            lista_productos = list(query.dicts())
+            x = [producto["Producto"] for producto in lista_productos]
+            y = [producto["Total"] for producto in lista_productos]
+            return x,y
+        else:
+            return [],[]
 
     def obtener_valor_maximo(self):
         totalOrdenVenta = 0
@@ -1168,6 +1306,52 @@ class OrdenVenta(BaseModel):
     defalult_name = "FACTC #"
     grupo_nombres = ['Información general', 'Información financiera']
     cant_grupo = 2
+    dashboard = {
+        'index': 1,
+        'index_nombre': 'Ordenes de venta',
+        'modelo': 'OrdenVenta',
+        'tipo': [
+            {
+                'titulo': 'Ordenes de venta sin facturar',
+                'filtro': True,
+                'filtro_conf': {
+                    'tipo': 'rango',
+                    'entrada': 'date',
+                    'tipo_valor': datetime.date,
+                    'valores_defecto': 'obtener_ordenes_sin_factura_valor',
+                    'textos': ['Desde','Hasta'],
+                },
+                'grafico':False,
+                'grafico_conf': {},
+                'tabla':True,
+                'tabla_conf': {
+                    'metodo': 'obtener_ordenes_sin_factura',
+                    'redirige': True,
+                },
+            },
+            {
+                'titulo': 'Utilidad ordenes de venta',
+                'filtro': True,
+                'filtro_conf': {
+                    'tipo': 'rango',
+                    'entrada': 'date',
+                    'tipo_valor': datetime.date,
+                    'valores_defecto': 'obtener_ordenes_sin_factura_valor',
+                    'textos': ['Desde', 'Hasta'],
+                },
+                'grafico': True,
+                'grafico_conf': {
+                    'tipo': 'plot',
+                    'metodo': 'obtener_venta_grafico'
+                },
+                'tabla': True,
+                'tabla_conf': {
+                    'metodo': 'obtener_venta_tabla',
+                    'redirige': False,
+                },
+            },
+        ]
+    }
     auto_Guardar = True
     models_Rels = ['OrdenVentaLine']
     accion_Config = {
@@ -1341,17 +1525,77 @@ class OrdenVenta(BaseModel):
         return model
 
     @classmethod
-    def obtener_ordenes_sin_factura(cls):
+    def obtener_ordenes_sin_factura_valor(cls):
+        today = datetime.date.today()
+        first_day = today.replace(day=1)
+        last_day = today.replace(day=calendar.monthrange(today.year, today.month)[1])
+        return first_day, last_day
+
+    @classmethod
+    def obtener_ordenes_sin_factura(cls,desde=False,hasta=False):
         datos = {}
         ordenes_ids = [id for (id,) in cls.select(cls.id).tuples()]
         ordenesFactura_ids = [id for (id,) in FacturaCliente.select(FacturaCliente.ordenventa_id).tuples()]
         ids = list(set(ordenes_ids) - set(ordenesFactura_ids))
         ordenes = cls.select(cls.id,cls.cliente,cls.nombre,cls.fecha).where(cls.id.in_(ids))
+        datos['MODEL'] = ['OrdenVenta' for orden in ordenes]
         datos['ID'] = [orden.id for orden in ordenes]
         datos['Nombre'] = [orden.nombre   for orden in ordenes]
         datos['Cliente'] = [orden.cliente.nombre if orden.cliente is not None else "N/A" for orden in ordenes]
         datos['Fecha'] = [orden.fecha for orden in ordenes]
         return datos
+
+    @classmethod
+    def obtener_venta_tabla(cls,desde=False,hasta=False):
+        datos = {}
+        if desde and hasta:
+            query = (OrdenVenta
+                     .select(OrdenVenta.id.alias('ID'),OrdenVenta.fecha.alias('Fecha'), fn.SUM(OrdenVenta.total).alias('Total'))
+                     .where(OrdenVenta.fecha.between(desde, hasta))
+                     .group_by(OrdenVenta.fecha)
+                     .order_by(OrdenVenta.fecha)
+                     )
+        else:
+            query = (OrdenVenta
+                     .select(OrdenVenta.id.alias('ID'),OrdenVenta.fecha.alias('Fecha'), fn.SUM(OrdenVenta.total).alias('Total'))
+                     .group_by(OrdenVenta.fecha)
+                     .order_by(OrdenVenta.fecha)
+                     )
+        if query.count() > 0:
+            lista_records = list(query.dicts())
+            datos['MODEL'] = ['OrdenVenta' for record in lista_records]
+            datos['ID'] = [record["ID"] for record in lista_records]
+            datos['Fecha'] = [record["Fecha"] for record in lista_records]
+            datos['Total'] = [record["Total"] for record in lista_records]
+            df = pd.DataFrame(datos)
+            df_ordenado = df.sort_values(by='Total', ascending=False).reset_index(drop=True)
+            return df_ordenado
+        else:
+            return {}
+
+    @classmethod
+    def obtener_venta_grafico(cls,desde=False,hasta=False):
+        datos = {}
+        if desde and hasta:
+            query = (OrdenVenta
+                     .select(OrdenVenta.id.alias('ID'),OrdenVenta.fecha.alias('Fecha'), fn.SUM(OrdenVenta.total).alias('Total'))
+                     .where(OrdenVenta.fecha.between(desde, hasta))
+                     .group_by(OrdenVenta.fecha)
+                     .order_by(OrdenVenta.fecha)
+                     )
+        else:
+            query = (OrdenVenta
+                     .select(OrdenVenta.id.alias('ID'),OrdenVenta.fecha.alias('Fecha'), fn.SUM(OrdenVenta.total).alias('Total'))
+                     .group_by(OrdenVenta.fecha)
+                     .order_by(OrdenVenta.fecha)
+                     )
+        if query.count() > 0:
+            lista_records = list(query.dicts())
+            x = [record["Fecha"] for record in lista_records]
+            y = [record["Total"] for record in lista_records]
+            return x, y
+        else:
+            return [], []
 
     def get_totales(self):
         model = globals()['OrdenVentaLine']
